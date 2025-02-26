@@ -4,40 +4,38 @@
 package tools
 
 import (
-    "winds-assistant/utils"
-    "fmt"
-    "log"
+	"fmt"
+	"log"
+	"winds-assistant/utils"
 )
 
-// 构造 Get-WinEvent 查询体
-type EventQuery struct {
-    LogName   string        // 日志类型 (Application, Security, System, etc.)
-    StartTime  int          // 起始时间 (负数，代表往前推多少天)
-    MaxEvents  int          // 最大事件数
-}
-
 // QueryEvents 根据给定的事件查询条件 q，查询指定日志中的事件。
-func QueryEvents(q EventQuery) (map[string]string, error) {
-    res := make(map[string]string)
-    
-    startTime := fmt.Sprintf("(Get-Date).AddDays(%v)", q.StartTime)
+func QueryEvents(q map[string]interface{}) (string, error) {
+    logName, _ := q["logName"].(string)
+    _startTime, _ := q["startTime"].(float64)
+    _maxEvents, _ := q["maxEvents"].(float64)
+
+    startTime := int(_startTime)
+    maxEvents := int(_maxEvents)
+
+    print(startTime, maxEvents)
+    startTimeFormat := fmt.Sprintf("(Get-Date).AddDays(%v)", -startTime)
     // 安全创建命令对象（拆分命令和参数）
     out, _, err := utils.RunCommand("PowerShell", "-Command", 
         "Get-WinEvent", 
         "-FilterHashtable",
-        fmt.Sprintf("@{ LogName='%s'; StartTime=%s }", q.LogName, startTime,),
-        "-MaxEvents", fmt.Sprint(q.MaxEvents),
+        fmt.Sprintf("@{ LogName='%s'; StartTime=%s }", logName, startTimeFormat,),
+        "-MaxEvents", fmt.Sprint(maxEvents),
         "| Out-String -Width 4096",
     )
     
     // 执行并检查错误
     if err != nil {
         log.Printf("[%s] Query Error: %v\n",
-        q.LogName,
+        logName,
             err,
-        );return nil, err
+        );return "", err
     }
-    res[q.LogName] = out
-    
-    return res, nil
+
+    return out, nil
 }

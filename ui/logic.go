@@ -9,12 +9,13 @@ import (
 	"time"
 	"crypto/rand"
 	"encoding/hex"
+	"sync"
 )
 
 // 处理来自 StreamMessage 通道的消息，并在聊天窗口中更新显示内容
-func ProcessStream(ctx context.Context, settings common.Settings, widgets common.Widgets, history map[string]interface{}) {
+func ProcessStream(ctx context.Context, wg *sync.WaitGroup, settings common.Settings, widgets common.Widgets, history map[string]interface{}) {
 	var contentBuffer bytes.Buffer
-
+	defer wg.Done()
 	widgets.ChatDisplay.SetText(fmt.Sprintf("%s%s\n", 
 		widgets.ChatDisplay.Text,
 		common.CHAT_ASSISTANT_INFO,
@@ -31,11 +32,20 @@ func ProcessStream(ctx context.Context, settings common.Settings, widgets common
             // 累积内容分块
             contentBuffer.WriteString(content)
             if done {
-				widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_END)
-				history["messages"] = append(
-					history["messages"].([]common.LLMMessage), 
-					common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
+				useTool, midOutput := workers.AgentParser(contentBuffer.String())
+				if useTool{
+					widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_AGENT_MID)
+					history["messages"] = append(
+						history["messages"].([]common.LLMMessage), 
+						common.LLMMessage{Role: "Agent", Content: midOutput})
+				}else{
+					widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_END)
+					history["messages"] = append(
+						history["messages"].([]common.LLMMessage), 
+						common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
+				}
 				widgets.ChatDisplay.Refresh()
+				contentBuffer.Reset() 
             }
 			widgets.ChatScroll.ScrollToBottom()
         },

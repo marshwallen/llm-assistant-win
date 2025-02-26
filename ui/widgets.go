@@ -49,6 +49,9 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *map[str
             }
             *history = make(map[string]interface{})
             (*history)["messages"] = []common.LLMMessage{}
+            if settings.EnableAgent{
+                (*history)["messages"] = append([]common.LLMMessage{{Role: "System", Content: workers.SYSTEM_PROMPT}}, (*history)["messages"].([]common.LLMMessage)...)
+            }
 
             settings.DialogID = GenerateID()
             updateSidebarInfo(modelTitle, settings)
@@ -62,6 +65,17 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *map[str
         widget.NewButton(common.WIDGET_CHAT_COPY, func() {
             clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
             clipboard.SetContent(chatDisplay.Text)
+        }),
+        widget.NewButton(common.WIDGET_ENABLE_AGENT, func() {
+            if settings.EnableAgent{
+                messages := (*history)["messages"].([]common.LLMMessage)
+                (*history)["messages"] = messages[1:]
+                settings.EnableAgent = false
+            }else{
+                (*history)["messages"] = append([]common.LLMMessage{{Role: "System", Content: workers.SYSTEM_PROMPT}}, (*history)["messages"].([]common.LLMMessage)...)
+                settings.EnableAgent = true
+            }
+            updateSidebarInfo(modelTitle, settings)
         }),
         widget.NewButton(common.WIDGET_SETTING, func() {
             showSettingsDialog(window, modelTitle, settings)
@@ -127,12 +141,14 @@ func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *
 
 // 更新侧边栏信息
 func updateSidebarInfo(sidebar *widget.Label, settings *common.Settings) {
-    sidebar.SetText(fmt.Sprintf("%s\n%s\n\n%s\n%s\n\n%s\n%s\n", 
+    sidebar.SetText(fmt.Sprintf("%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%v\n", 
         common.SYSTEM_URL_INFO,
         settings.URL,
         common.SYSTEM_MODEL_INFO,
         settings.Model,
         common.SYSTEM_DIALOG_ID_INFO,
         settings.DialogID,
+        common.SYSTEM_AGENT_STATUS_INFO,
+        settings.EnableAgent,
     ))
 }

@@ -1,13 +1,14 @@
 package ui
 
 import (
+	"context"
 	"fmt"
+	"sync"
+	"winds-assistant/common"
 	"winds-assistant/utils"
+	"winds-assistant/workers"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-    "winds-assistant/workers"
-    "winds-assistant/common"
-    "context"
 )
 
 // 初始化并启动应用程序，设置用户界面和后端处理
@@ -33,12 +34,14 @@ func StartAPP() {
         ModelList:   modelList,
         CancelFunc:  cancel,
         DialogID:    GenerateID(),
+        EnableAgent: true,
     }
     
     // **Backend Settings**
     history := map[string]interface{}{}
     history["messages"] = []common.LLMMessage{}
-
+    history["messages"] = append(history["messages"].([]common.LLMMessage), common.LLMMessage{Role: "System", Content: workers.SYSTEM_PROMPT})
+    
     widgets := MainWidgets(window, &settings, &history)
     widgets.InputEntry.OnSubmitted = func(text string) {
         // 提交前先检查模型存不存在
@@ -53,7 +56,23 @@ func StartAPP() {
 
         ctx, cancel = context.WithCancel(context.Background())
         settings.CancelFunc = cancel
-        go ProcessStream(ctx, settings, widgets, history)
+
+        var wg sync.WaitGroup
+        wg.Add(1)
+        go ProcessStream(ctx, &wg, settings, widgets, history)
+        if settings.EnableAgent{
+            wg.Wait()
+            messagesList := history["messages"].([]common.LLMMessage)
+            lastMessage := messagesList[len(messagesList)-1]
+            if lastMessage.Role == "Agent" {
+                history["messages"] = append(history["messages"].([]common.LLMMessage), common.LLMMessage{
+                    Role: "User", Content: workers.USER_PROMPT_LAST + lastMessage.Content,
+                })
+                wg.Add(1)
+                go ProcessStream(ctx, &wg, settings, widgets, history)
+            }  
+        }
+        wg.Wait()
     }
 
     // **APP Start**

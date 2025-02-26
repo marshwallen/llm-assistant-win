@@ -6,11 +6,13 @@ const (
 	SYSTEM_DIALOG_ID_INFO = "🍔 <会话 ID>"
 	SYSTEM_URL_INFO = "🍰 <URL>"
 	SYSTEM_MODEL_INFO = "🍻 <MODEL>"
+	SYSTEM_AGENT_STATUS_INFO = "🍺 <ENABLE AGENT>"
 
 	// CHAT 相关信息
 	CHAT_USER_INFO = "\n🍩 <USER> : "
 	CHAT_ASSISTANT_INFO = "\n🍲 <ASSISTANT> : "
 	CHAT_END = "\n<对话结束>\n"
+	CHAT_AGENT_MID = "\n<中间结果>\n"
 	CHAT_TERMINATE = "\n<对话终止>\n"
 
 	// WIDGET 文本
@@ -29,4 +31,5 @@ const (
 	WIDGET_DIALOG_SAVE = "保存"
 	WIDGET_APP_NAME = "WinDS Assistant"
 	WIDGET_REFRESH = "刷新配置"
+	WIDGET_ENABLE_AGENT = "AGENT"
 )

@@ -36,6 +36,7 @@ type Settings struct {
     ModelList   []string            // 模型列表
     CancelFunc  context.CancelFunc  // 是否停止对话
     DialogID    string              // 对话 ID
+    EnableAgent bool                // 是否启用Agent调用系统能力
 }
 
 // 配置文件解析
@@ -54,4 +55,19 @@ type Widgets struct {
 	ChatDisplay *widget.Label
 	ChatScroll 	*container.Scroll
 	InputEntry 	*widget.Entry
+}
+
+// 构造 Get-WinEvent 查询体
+type EventQuery struct {
+    LogName   string        `json:"logName"`     // 日志类型 (Application, Security, System, etc.)
+    StartTime  int          `json:"startTime"`   // 起始时间 (正数，代表往前推多少天)
+    MaxEvents  int          `json:"maxEvents"`   // 最大事件数
+}
+
+type FileTreeQuery struct {
+    Disk        []string    `json:"disk"`
+}
+
+type SysHealthQuery struct {
+    Minutes     int         `json:"minutes"`
 }

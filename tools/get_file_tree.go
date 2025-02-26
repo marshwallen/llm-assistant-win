@@ -124,5 +124,4 @@ func SaveFileTree(diskname string, maxPrintDepth int, maxSearchDepth int, contai
     if err != nil {
         log.Fatalf("%v", err)
     }
-	fmt.Println("Filetree saved.")
 }

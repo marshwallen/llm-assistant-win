@@ -8,10 +8,11 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+    "winds-assistant/workers"
 )
 
 // 创建并返回一个主布局，包含侧边栏和聊天窗口
-func MainLayout(window fyne.Window, settings *common.Settings, history *map[string]interface{}) (common.Widgets){
+func MainWidgets(window fyne.Window, settings *common.Settings, history *map[string]interface{}) (common.Widgets){
     
     // 侧边信息栏
     modelTitle := widget.NewLabel("") 
@@ -61,6 +62,14 @@ func MainLayout(window fyne.Window, settings *common.Settings, history *map[stri
         widget.NewButton(common.WIDGET_SETTING, func() {
             showSettingsDialog(window, modelTitle, settings)
         }),
+        widget.NewButton(common.WIDGET_REFRESH, func() {
+            modelList := workers.GetModelList(settings.URL, window)
+            if len(modelList) > 0 {
+                settings.Model = modelList[0]
+            }
+            settings.ModelList = modelList
+            updateSidebarInfo(modelTitle, settings)
+        }),
         modelTitle,
         layout.NewSpacer(),
     )
@@ -72,6 +81,7 @@ func MainLayout(window fyne.Window, settings *common.Settings, history *map[stri
     )
     mainSplit.SetOffset(0.2)
 	return common.Widgets{
+        Window:         window,
 		MainSplit: 		mainSplit,
 		ChatDisplay: 	chatDisplay,
 		ChatScroll: 	chatScroll,
@@ -81,14 +91,19 @@ func MainLayout(window fyne.Window, settings *common.Settings, history *map[stri
 
 // 设置对话框
 func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *common.Settings) {
+    url := widget.NewEntry()
+    url.SetText(settings.URL)
+
     apikey := widget.NewEntry()
+    apikey.SetText(settings.Token)
+
     modelSelect := widget.NewSelect([]string{common.WIDGET_LOADING}, func(s string) {})
     modelSelect.SetOptions(settings.ModelList)
     modelSelect.SetSelected(settings.Model)
-    apikey.SetText(settings.Token)
-
+    
     // 构建对话框内容
     form := widget.NewForm(
+        widget.NewFormItem(common.WIDGET_FORM_URL, url),
         widget.NewFormItem(common.WIDGET_FORM_APIKEY, apikey),
         widget.NewFormItem(common.WIDGET_FORM_MODEL_SELECT, modelSelect),
     )
@@ -98,6 +113,7 @@ func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *
         func(save bool) {
             if save {
                 // 获取选中的值
+                settings.URL = url.Text
                 settings.Token = apikey.Text
                 settings.Model = modelSelect.Selected
                 updateSidebarInfo(modelTitle, settings)

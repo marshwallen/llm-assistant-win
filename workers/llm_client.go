@@ -8,6 +8,7 @@ import (
     "net/http"
 	"bufio"
     "winds-assistant/common"
+    "fyne.io/fyne/v2"
     "context"
 )
 
@@ -37,6 +38,7 @@ func ChatStream(ctx context.Context, settings common.Settings, widgets common.Wi
     client := &http.Client{Timeout: 0} // 无超时限制
     resp, err := client.Do(req)
     if err != nil {
+        common.ShowErrorDialog(widgets.Window, err)
         return fmt.Errorf("request failed: %v", err)
     }
     defer resp.Body.Close()
@@ -60,6 +62,7 @@ func ChatStream(ctx context.Context, settings common.Settings, widgets common.Wi
         line, err := reader.ReadBytes('\n')
         if err != nil {
             if err == io.EOF {
+                common.ShowErrorDialog(widgets.Window, err)
                 streamCallback("", true) // 通知结束
                 return nil
             }
@@ -81,22 +84,25 @@ func ChatStream(ctx context.Context, settings common.Settings, widgets common.Wi
 }
 
 // 获取模型列表
-func GetModelList(cfg *common.LLMConfig) (modelList []string){
+func GetModelList(url string, window fyne.Window) (modelList []string){
     // 发送 GET 请求
-    resp, err := http.Get(cfg.Backend.Ollama.URL+"/api/tags")
+    resp, err := http.Get(url+"/api/tags")
     if err != nil {
+        common.ShowErrorDialog(window, err)
         fmt.Println("req failed:", err)
         return
     }
     defer resp.Body.Close()
     body, err := io.ReadAll(resp.Body)
     if err != nil {
+        common.ShowErrorDialog(window, err)
         fmt.Println("read resp failed:", err)
     }
 
     var modelListResponse common.ModelListResponse
     err = json.Unmarshal(body, &modelListResponse)
     if err != nil {
+        common.ShowErrorDialog(window, err)
         fmt.Println("unmarshal json failed:", err)
     }
 

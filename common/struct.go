@@ -4,6 +4,7 @@ import (
     "context"
     "fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+    "fyne.io/fyne/v2"
 )
 
 // 解析 /api/chat
@@ -48,6 +49,7 @@ type LLMConfig struct {
 }
 
 type Widgets struct {
+    Window      fyne.Window
 	MainSplit 	*container.Split
 	ChatDisplay *widget.Label
 	ChatScroll 	*container.Scroll

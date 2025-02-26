@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"winds-assistant/common"
 	"winds-assistant/workers"
 	"time"
@@ -36,7 +35,6 @@ func ProcessStream(ctx context.Context, settings common.Settings, widgets common
 				history["messages"] = append(
 					history["messages"].([]common.LLMMessage), 
 					common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
-
 				widgets.ChatDisplay.Refresh()
             }
 			widgets.ChatScroll.ScrollToBottom()
@@ -48,7 +46,7 @@ func ProcessStream(ctx context.Context, settings common.Settings, widgets common
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		common.ShowErrorDialog(widgets.Window, err)
 	}
 }
 

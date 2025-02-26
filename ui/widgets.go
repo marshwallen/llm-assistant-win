@@ -54,10 +54,14 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *map[str
             updateSidebarInfo(modelTitle, settings)
             chatDisplay.SetText(common.SYSTEM_CHAT_INFO)
         }),
-        widget.NewButton(common.WIDGET_STOP, func() {
+        widget.NewButton(common.WIDGET_CHAT_TERMINATE, func() {
             if settings.CancelFunc != nil {
                 settings.CancelFunc()
             }
+        }),
+        widget.NewButton(common.WIDGET_CHAT_COPY, func() {
+            clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
+            clipboard.SetContent(chatDisplay.Text)
         }),
         widget.NewButton(common.WIDGET_SETTING, func() {
             showSettingsDialog(window, modelTitle, settings)

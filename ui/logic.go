@@ -39,7 +39,7 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 				useTool, midOutput := workers.AgentParser(contentBuffer.String())
 				// 如果 useTool 为 True，则 midOutput 为使用工具搜索后的结果
 				if useTool{
-					widgets.ChatChunk.Process(common.CHAT_AGENT_MID)
+					widgets.ChatChunk.Process(common.CHAT_AGENT_MID + midOutput)
         			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
 
 					UpdateHistory(history, common.LLMMessage{Role: "MidResult", Content: midOutput})
@@ -71,7 +71,7 @@ func ProcessStreamWithTools(ctx context.Context, settings *common.Settings, widg
 
 	if lastMessage.Role == "MidResult" {
 		history.Remove(history.Back())
-		UpdateHistory(history, common.LLMMessage{Role: "User", Content: workers.USER_PROMPT_LAST + lastMessage.Content})
+		UpdateHistory(history, common.LLMMessage{Role: "User", Content: workers.USER_PROMPT_WITH_TOOLS + lastMessage.Content})
 		ProcessStream(ctx, settings, widgets, history)
 	}
 }

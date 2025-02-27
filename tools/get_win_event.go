@@ -10,14 +10,8 @@ import (
 )
 
 // QueryEvents 根据给定的事件查询条件 q，查询指定日志中的事件。
-func QueryEvents(q map[string]interface{}) (string, error) {
-    logName, _ := q["logName"].(string)
-    _startTime, _ := q["startTime"].(float64)
-    _maxEvents, _ := q["maxEvents"].(float64)
-
-    startTime := int(_startTime)
-    maxEvents := int(_maxEvents)
-
+func QueryEvents(logName string, startTime int, maxEvents int) (string, error) {
+    
     startTimeFormat := fmt.Sprintf("(Get-Date).AddDays(%v)", -startTime)
     // 安全创建命令对象（拆分命令和参数）
     out, _, err := utils.RunCommand("PowerShell", "-Command", 

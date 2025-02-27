@@ -3,8 +3,10 @@ package ui
 import (
 	"container/list"
 	"fmt"
+	"strings"
 	"winds-assistant/common"
 	"winds-assistant/workers"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -105,7 +107,7 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
                 settings.SysPrompt = workers.SYSTEM_PROMPT_DEFAULT
                 settings.EnableAgent = false
             }else{
-                settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS
+                settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + strings.Join(workers.ToolsPromptRegister, "\n")
                 settings.EnableAgent = true
             }
             updateSidebarInfo(modelTitle, settings)

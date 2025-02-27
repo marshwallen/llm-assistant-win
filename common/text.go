@@ -12,7 +12,7 @@ const (
 	CHAT_USER_INFO = "\n🍩 <USER> :\n"
 	CHAT_ASSISTANT_INFO = "\n🍲 <ASSISTANT> :\n"
 	CHAT_END = "\n<对话结束>\n"
-	CHAT_AGENT_MID = "\n<中间结果>\n"
+	CHAT_AGENT_MID = "\n中间结果:\n"
 	CHAT_TERMINATE = "\n<对话终止>\n"
 
 	// WIDGET 文本

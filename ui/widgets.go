@@ -12,9 +12,17 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+    // 输入框的最大长度
+    MaxInputLength = 2048
+    // 聊天窗口一次渲染的最大文本长度
+    MaxChatMessageLength = 2048
+    // 聊天滑动窗口单边缓冲区大小
+    SideCacheSize = 64   
+)
+
 // 创建并返回一个主布局，包含侧边栏和聊天窗口
 func MainWidgets(window fyne.Window, settings *common.Settings, history *list.List) (common.Widgets){
-    
     // 侧边信息栏
     modelTitle := widget.NewLabel("") 
     modelTitle.Wrapping = fyne.TextWrapWord
@@ -24,11 +32,35 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
     chatDisplay := widget.NewLabel(common.SYSTEM_CHAT_INFO)
     chatDisplay.Wrapping = fyne.TextWrapWord
 
-    inputEntry := widget.NewEntry()
+    // 保存分块的聊天信息
+    chatChunk := &common.ChatChunkProcessor{WindowSize: MaxChatMessageLength, SideCacheSize: SideCacheSize}
+
+    // 输入框
+    inputEntry := widget.NewMultiLineEntry()
     inputEntry.SetPlaceHolder(common.WIDGET_INPUT_PLACEHOLDER)
+    inputEntry.Wrapping = fyne.TextWrapWord
+
+    // 动态截断超长输入
+    inputEntry.OnChanged = func(text string) {
+        if len(text) > MaxInputLength {
+            // 立即截断到允许长度，避免卡死
+            trimmed := text[:MaxInputLength]
+            inputEntry.SetText(trimmed)  // 自动触发刷新
+        }
+    }
     
+    // 聊天窗口滚动
+    chatScroll := common.NewSmartScroll(chatDisplay)
+
+    chatScroll.OnScrollToTop = func() {
+        chatDisplay.SetText(chatChunk.RenderPreText())
+    }
+
+    chatScroll.OnScrollToBottom = func() {
+        chatDisplay.SetText(chatChunk.RenderNextText())
+    }
+
     // 聊天窗口布局
-    chatScroll := container.NewScroll(chatDisplay)
     chatSplit := container.NewVSplit(
         chatScroll,
         container.NewBorder(nil, nil, nil, 
@@ -52,14 +84,19 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
 
             settings.DialogID = GenerateID()
             updateSidebarInfo(modelTitle, settings)
-            chatDisplay.SetText(common.SYSTEM_CHAT_INFO)
+
+            chatChunk.ClearChunks()
+            chatChunk.Process(common.SYSTEM_CHAT_INFO)
+        	chatDisplay.SetText(chatChunk.RenderNextText())
+            chatDisplay.Refresh()
         }),
         widget.NewButton(common.WIDGET_CHAT_TERMINATE, func() {
             if settings.CancelFunc != nil {
                 settings.CancelFunc()
             }
+            settings.Running = false
         }),
-        widget.NewButton(common.WIDGET_CHAT_COPY, func() {
+        widget.NewButton(common.WIDGET_COPY_CHAT, func() {
             clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
             clipboard.SetContent(chatDisplay.Text)
         }),
@@ -100,6 +137,7 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
 		ChatDisplay: 	chatDisplay,
 		ChatScroll: 	chatScroll,
 		InputEntry: 	inputEntry,
+        ChatChunk:      chatChunk,
 	}
 }
 

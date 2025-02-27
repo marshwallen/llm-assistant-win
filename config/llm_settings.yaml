@@ -1,4 +1,4 @@
 backend:
   openai:
     url: http://10.147.17.209:11434
-    token: 
+    api_key: 

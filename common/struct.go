@@ -1,13 +1,13 @@
 package common
 
 import (
-    "context"
-    "fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
-    "fyne.io/fyne/v2"
-    "github.com/shirou/gopsutil/v4/cpu"
+	"context"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
+    "fyne.io/fyne/v2"
+    "fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 )
 
 // 解析 /api/chat
@@ -41,6 +41,7 @@ type Settings struct {
     DialogID    string              // 对话 ID
     EnableAgent bool                // 是否启用Agent调用系统能力
     SysPrompt   string              // 系统 Prompt
+    Running     bool                // 是否正在对话
 }
 
 // 配置文件解析
@@ -51,14 +52,6 @@ type LLMConfig struct {
             API_KEY    string `yaml:"api_key"`
         } `yaml:"openai"`
     } `yaml:"backend"`
-}
-
-type Widgets struct {
-    Window      fyne.Window
-	MainSplit 	*container.Split
-	ChatDisplay *widget.Label
-	ChatScroll 	*container.Scroll
-	InputEntry 	*widget.Entry
 }
 
 type GPUStats struct {
@@ -80,4 +73,13 @@ type MetricData struct {
 	Disk *disk.UsageStat
 	GPU  []GPUStats
 	Time int64
+}
+
+type Widgets struct {
+    Window          fyne.Window
+	MainSplit 	    *container.Split
+	ChatDisplay     *widget.Label
+	ChatScroll 	    *SmartScroll
+	InputEntry 	    *widget.Entry
+    ChatChunk       *ChatChunkProcessor
 }

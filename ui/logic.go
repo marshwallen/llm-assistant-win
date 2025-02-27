@@ -18,8 +18,10 @@ const (
 )
 
 // 处理来自 StreamMessage 通道的消息，并在聊天窗口中更新显示内容
-func ProcessStream(ctx context.Context, settings common.Settings, widgets common.Widgets, history *list.List) {
+func ProcessStream(ctx context.Context, settings *common.Settings, widgets common.Widgets, history *list.List) {
+	settings.Running = true
 	var contentBuffer bytes.Buffer
+
     err := workers.ChatStream(
 		ctx,
 		settings,
@@ -27,22 +29,30 @@ func ProcessStream(ctx context.Context, settings common.Settings, widgets common
         // 回调函数
         func(content string, done bool) {
             // 流式实时输出
-			widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + content)
+			widgets.ChatChunk.Process(content)
+        	widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+			widgets.ChatScroll.ScrollToBottom()
+			
             // 累积内容分块
             contentBuffer.WriteString(content)
             if done {
 				useTool, midOutput := workers.AgentParser(contentBuffer.String())
 				// 如果 useTool 为 True，则 midOutput 为使用工具搜索后的结果
 				if useTool{
-					widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_AGENT_MID)
+					widgets.ChatChunk.Process(common.CHAT_AGENT_MID)
+        			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+
 					UpdateHistory(history, common.LLMMessage{Role: "MidResult", Content: midOutput})
 				// 否则，midOutput 为直接返回的 Assistant 的回答
 				}else{
-					widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_END)
+					widgets.ChatChunk.Process(common.CHAT_END)
+        			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+
 					UpdateHistory(history, common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
 				}
 				widgets.ChatDisplay.Refresh()
 				contentBuffer.Reset() 
+				settings.Running = false
             }
 			widgets.ChatScroll.ScrollToBottom()
         },
@@ -56,7 +66,7 @@ func ProcessStream(ctx context.Context, settings common.Settings, widgets common
 }
 
 // 两次聊天流以调取工具
-func ProcessStreamWithTools(ctx context.Context, settings common.Settings, widgets common.Widgets, history *list.List) {
+func ProcessStreamWithTools(ctx context.Context, settings *common.Settings, widgets common.Widgets, history *list.List) {
 	ProcessStream(ctx, settings, widgets, history)
 	lastMessage := history.Back().Value.(common.LLMMessage)
 

@@ -13,7 +13,7 @@ import (
 )
 
 // 流式调用OpenAI接口的核心函数
-func ChatStream(ctx context.Context, settings common.Settings, widgets common.Widgets, streamCallback func(content string, done bool),
+func ChatStream(ctx context.Context, settings *common.Settings, widgets common.Widgets, streamCallback func(content string, done bool),
     options ...map[string]interface{}) error {
 
     // 构建请求体
@@ -53,7 +53,9 @@ func ChatStream(ctx context.Context, settings common.Settings, widgets common.Wi
     for {
         select {
             case <-ctx.Done():
-                widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_TERMINATE)
+                settings.Running = false
+                widgets.ChatChunk.Process(common.CHAT_TERMINATE)
+        		widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
                 widgets.ChatScroll.ScrollToBottom()
                 return nil
             default:    

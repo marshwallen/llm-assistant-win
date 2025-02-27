@@ -37,6 +37,7 @@ func StartAPP() {
         DialogID:    GenerateID(),
         EnableAgent: false,
         SysPrompt:   workers.SYSTEM_PROMPT_DEFAULT,
+        Running:     false,
     }
     
     // **Backend Settings**
@@ -49,24 +50,27 @@ func StartAPP() {
             common.ShowErrorDialog(window, fmt.Errorf("error: model not found"))
             return
         }
+
+        if settings.Running {
+            common.ShowErrorDialog(window, fmt.Errorf("info: assistant is running, terminate it first"))
+            return
+        }
         UpdateHistory(history, common.LLMMessage{Role: "User", Content: text})
-        widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + fmt.Sprintf("%s\n%s\n\n", common.CHAT_USER_INFO, text))
         widgets.InputEntry.SetText("")
-        widgets.ChatScroll.ScrollToBottom()
+
+        widgets.ChatChunk.Process(fmt.Sprintf("%s%s\n", common.CHAT_USER_INFO, text))
+        widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
 
         ctx, cancel = context.WithCancel(context.Background())
         settings.CancelFunc = cancel
 
-        widgets.ChatDisplay.SetText(fmt.Sprintf("%s%s\n", 
-            widgets.ChatDisplay.Text,
-            common.CHAT_ASSISTANT_INFO,
-		))
-	    widgets.ChatScroll.ScrollToBottom()
-
+        widgets.ChatChunk.Process(common.CHAT_ASSISTANT_INFO)
+        widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+        widgets.ChatScroll.ScrollToBottom()
         if settings.EnableAgent{
-            go ProcessStreamWithTools(ctx, settings, widgets, history)
+            go ProcessStreamWithTools(ctx, &settings, widgets, history)
         }else{
-            go ProcessStream(ctx, settings, widgets, history)
+            go ProcessStream(ctx, &settings, widgets, history)
         }
     }
 

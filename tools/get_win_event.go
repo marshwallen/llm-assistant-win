@@ -18,7 +18,6 @@ func QueryEvents(q map[string]interface{}) (string, error) {
     startTime := int(_startTime)
     maxEvents := int(_maxEvents)
 
-    print(startTime, maxEvents)
     startTimeFormat := fmt.Sprintf("(Get-Date).AddDays(%v)", -startTime)
     // 安全创建命令对象（拆分命令和参数）
     out, _, err := utils.RunCommand("PowerShell", "-Command", 

@@ -50,7 +50,6 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 
 					UpdateHistory(history, common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
 				}
-				widgets.ChatDisplay.Refresh()
 				contentBuffer.Reset() 
 				settings.Running = false
             }

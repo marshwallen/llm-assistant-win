@@ -7,23 +7,12 @@ import (
 	"sync"
 	"winds-assistant/utils"
 	"strconv"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/disk"
-	"github.com/shirou/gopsutil/v4/mem"
+	"winds-assistant/common"
 	"winds-assistant/tools"
 	"fmt"
 	"os"
 	"strings"
 )
-
-type MetricData struct {
-	CPU  cpu.InfoStat
-	Mem  *mem.VirtualMemoryStat
-	Disk *disk.UsageStat
-	GPU  []tools.GPUStats
-	Time int64
-}
-
 type DailyWriter struct {
     writers    map[string]*utils.CSVWriter
     currentDay string
@@ -39,8 +28,8 @@ func NewDailyWriter() *DailyWriter {
 }
 
 const (
-	collectInterval = 5 * time.Second
-	storeInterval   = 5 * time.Second
+	collectInterval = 10 * time.Second
+	storeInterval   = 10 * time.Second
 	bufferSize      = 1024
 	dateFormat = "20060102"
 )
@@ -57,7 +46,7 @@ func MonitorSys(ctx context.Context) (stopFunc func()) {
 		fmt.Printf("Error: %v\n", err)
 	}
 
-	dataChan := make(chan MetricData, bufferSize)
+	dataChan := make(chan common.MetricData, bufferSize)
 
 	// 启动采集协程
 	wg.Add(1)
@@ -80,7 +69,7 @@ func MonitorSys(ctx context.Context) (stopFunc func()) {
 }
 
 // 定期收集系统指标并将其发送到指定的通道。
-func collectMetrics(ctx context.Context, dataChan chan<- MetricData) {
+func collectMetrics(ctx context.Context, dataChan chan<- common.MetricData) {
 	ticker := time.NewTicker(collectInterval)
 	defer ticker.Stop()
 
@@ -106,28 +95,28 @@ func collectMetrics(ctx context.Context, dataChan chan<- MetricData) {
 }
 
 // 收集系统的各项指标数据，包括 CPU、内存、磁盘和 GPU 信息。
-func gatherSystemMetrics() (MetricData, error) {
+func gatherSystemMetrics() (common.MetricData, error) {
 	cpuInfo, err := tools.GetCPUInfo()
 	if err != nil {
-		return MetricData{}, err
+		return common.MetricData{}, err
 	}
 
 	memInfo, err := tools.GetMemInfo()
 	if err != nil {
-		return MetricData{}, err
+		return common.MetricData{}, err
 	}
 
 	diskInfo, err := tools.GetDiskInfo()
 	if err != nil {
-		return MetricData{}, err
+		return common.MetricData{}, err
 	}
 
 	gpuInfo, err := tools.GetNVGPUInfo()
 	if err != nil {
-		return MetricData{}, err
+		return common.MetricData{}, err
 	}
 
-	return MetricData{
+	return common.MetricData{
 		CPU:  cpuInfo,
 		Mem:  memInfo,
 		Disk: diskInfo,
@@ -137,11 +126,11 @@ func gatherSystemMetrics() (MetricData, error) {
 }
 
 // 持续接收 MetricData 并定期将其存储到 CSV 文件中。
-func storeMetrics(ctx context.Context, writers map[string]*utils.CSVWriter, dataChan <-chan MetricData) {
+func storeMetrics(ctx context.Context, writers map[string]*utils.CSVWriter, dataChan <-chan common.MetricData) {
 	ticker := time.NewTicker(storeInterval)
 	defer ticker.Stop()
 
-	var batch []MetricData
+	var batch []common.MetricData
 	for {
 		select {
 		case <-ctx.Done():
@@ -167,7 +156,7 @@ func storeMetrics(ctx context.Context, writers map[string]*utils.CSVWriter, data
 }
 
 // 将一批 MetricData 写入 CSV 文件。
-func writeBatchToCSV(batch []MetricData) {
+func writeBatchToCSV(batch []common.MetricData) {
     for _, data := range batch {
         dailyWriter.WriteMetric(data.Time, "cpu_clock", data.CPU.Mhz, "MHz")
         dailyWriter.WriteMetric(data.Time, "mem_used", float64(data.Mem.Used), "bytes")
@@ -237,16 +226,32 @@ func (dw *DailyWriter) WriteMetric(timestamp int64, name string, value float64, 
 
     // 获取或创建写入器
     writer, exists := dw.writers[name]
-    if !exists {
-        fileName := fmt.Sprintf("data/%s_%s.csv", name, dw.currentDay)
-        var err error
+	if !exists {
+		fileName := fmt.Sprintf("data/%s_%s.csv", name, dw.currentDay)
+		
+		// 检查文件是否已存在
+		fileExists := false
+		if _, err := os.Stat(fileName); err == nil {
+			fileExists = true
+		} else if !os.IsNotExist(err) {
+			log.Printf("check file status failed: %v", err)
+			return
+		}
+
+		var err error
         if writer, err = utils.NewCSVWriter(fileName); err != nil {
-            log.Printf("创建写入器失败: %v", err)
+            log.Printf("create writer failed: %v", err)
             return
         }
-        dw.writers[name] = writer
-        writer.Write([]string{"timestamp", "time", "name", "value", "unit", "source"}) // 写入表头
-    }
+
+		dw.writers[name] = writer
+		// 仅在创建新文件时写入表头
+		if !fileExists {
+			if err := writer.Write([]string{"timestamp", "time", "name", "value", "unit", "source"}); err != nil {
+				log.Printf("write table failed: %v", err)
+			}
+		}
+	}
 
     // 构造记录
     record := []string{
@@ -264,7 +269,7 @@ func (dw *DailyWriter) WriteMetric(timestamp int64, name string, value float64, 
 }
 
 // 处理剩余数据
-func flushRemainingData(batch []MetricData) {
+func flushRemainingData(batch []common.MetricData) {
     if len(batch) > 0 {
         log.Printf("Flushing %d pending metrics", len(batch))
         writeBatchToCSV(batch)

@@ -1,18 +1,19 @@
 package ui
 
 import (
+	"container/list"
 	"fmt"
 	"winds-assistant/common"
+	"winds-assistant/workers"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-    "winds-assistant/workers"
 )
 
 // 创建并返回一个主布局，包含侧边栏和聊天窗口
-func MainWidgets(window fyne.Window, settings *common.Settings, history *map[string]interface{}) (common.Widgets){
+func MainWidgets(window fyne.Window, settings *common.Settings, history *list.List) (common.Widgets){
     
     // 侧边信息栏
     modelTitle := widget.NewLabel("") 
@@ -47,11 +48,7 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *map[str
             if settings.CancelFunc != nil {
                 settings.CancelFunc()
             }
-            *history = make(map[string]interface{})
-            (*history)["messages"] = []common.LLMMessage{}
-            if settings.EnableAgent{
-                (*history)["messages"] = append([]common.LLMMessage{{Role: "System", Content: workers.SYSTEM_PROMPT}}, (*history)["messages"].([]common.LLMMessage)...)
-            }
+            history.Init()
 
             settings.DialogID = GenerateID()
             updateSidebarInfo(modelTitle, settings)
@@ -66,13 +63,12 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *map[str
             clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
             clipboard.SetContent(chatDisplay.Text)
         }),
-        widget.NewButton(common.WIDGET_ENABLE_AGENT, func() {
+        widget.NewButton(common.WIDGET_SWITCH_AGENT, func() {
             if settings.EnableAgent{
-                messages := (*history)["messages"].([]common.LLMMessage)
-                (*history)["messages"] = messages[1:]
+                settings.SysPrompt = workers.SYSTEM_PROMPT_DEFAULT
                 settings.EnableAgent = false
             }else{
-                (*history)["messages"] = append([]common.LLMMessage{{Role: "System", Content: workers.SYSTEM_PROMPT}}, (*history)["messages"].([]common.LLMMessage)...)
+                settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS
                 settings.EnableAgent = true
             }
             updateSidebarInfo(modelTitle, settings)
@@ -113,7 +109,7 @@ func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *
     url.SetText(settings.URL)
 
     apikey := widget.NewEntry()
-    apikey.SetText(settings.Token)
+    apikey.SetText(settings.API_KEY)
 
     modelSelect := widget.NewSelect([]string{common.WIDGET_LOADING}, func(s string) {})
     modelSelect.SetOptions(settings.ModelList)
@@ -132,7 +128,7 @@ func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *
             if save {
                 // 获取选中的值
                 settings.URL = url.Text
-                settings.Token = apikey.Text
+                settings.API_KEY = apikey.Text
                 settings.Model = modelSelect.Selected
                 updateSidebarInfo(modelTitle, settings)
             }

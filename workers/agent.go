@@ -8,8 +8,9 @@ import (
 )
 
 const (
+	SYSTEM_PROMPT_DEFAULT = `你是一个人工智能助手。`
 	// 尝试解析用户需求以调取工具
-	SYSTEM_PROMPT = `
+	SYSTEM_PROMPT_WITH_TOOLS = `
 		你是一个 Windows 系统上的人工智能助手。你需要分析用户的输入，然后以规定的格式返回将使用的工具。获取到信息后，你可以回答用户的问题。
 
 		1. 

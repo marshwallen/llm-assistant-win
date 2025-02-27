@@ -9,18 +9,17 @@ import (
 	"time"
 	"crypto/rand"
 	"encoding/hex"
-	"sync"
+	"container/list"
+)
+
+const (
+	// 用于维护历史记录的链表（维护最近的 HISTORY_LIST_LENGTH 个记录）
+	HISTORY_LIST_LENGTH = 5
 )
 
 // 处理来自 StreamMessage 通道的消息，并在聊天窗口中更新显示内容
-func ProcessStream(ctx context.Context, wg *sync.WaitGroup, settings common.Settings, widgets common.Widgets, history map[string]interface{}) {
+func ProcessStream(ctx context.Context, settings common.Settings, widgets common.Widgets, history *list.List) {
 	var contentBuffer bytes.Buffer
-	defer wg.Done()
-	widgets.ChatDisplay.SetText(fmt.Sprintf("%s%s\n", 
-		widgets.ChatDisplay.Text,
-		common.CHAT_ASSISTANT_INFO,
-		))
-
     err := workers.ChatStream(
 		ctx,
 		settings,
@@ -33,16 +32,14 @@ func ProcessStream(ctx context.Context, wg *sync.WaitGroup, settings common.Sett
             contentBuffer.WriteString(content)
             if done {
 				useTool, midOutput := workers.AgentParser(contentBuffer.String())
+				// 如果 useTool 为 True，则 midOutput 为使用工具搜索后的结果
 				if useTool{
 					widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_AGENT_MID)
-					history["messages"] = append(
-						history["messages"].([]common.LLMMessage), 
-						common.LLMMessage{Role: "Agent", Content: midOutput})
+					UpdateHistory(history, common.LLMMessage{Role: "MidResult", Content: midOutput})
+				// 否则，midOutput 为直接返回的 Assistant 的回答
 				}else{
 					widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + common.CHAT_END)
-					history["messages"] = append(
-						history["messages"].([]common.LLMMessage), 
-						common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
+					UpdateHistory(history, common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
 				}
 				widgets.ChatDisplay.Refresh()
 				contentBuffer.Reset() 
@@ -50,13 +47,23 @@ func ProcessStream(ctx context.Context, wg *sync.WaitGroup, settings common.Sett
 			widgets.ChatScroll.ScrollToBottom()
         },
         // 输入对话历史
-        map[string]interface{}{
-            "messages":    history["messages"],
-        },
+        GenerateHistoryMessage(history, settings.SysPrompt),
 	)
 
 	if err != nil {
 		common.ShowErrorDialog(widgets.Window, err)
+	}
+}
+
+// 两次聊天流以调取工具
+func ProcessStreamWithTools(ctx context.Context, settings common.Settings, widgets common.Widgets, history *list.List) {
+	ProcessStream(ctx, settings, widgets, history)
+	lastMessage := history.Back().Value.(common.LLMMessage)
+
+	if lastMessage.Role == "MidResult" {
+		history.Remove(history.Back())
+		UpdateHistory(history, common.LLMMessage{Role: "User", Content: workers.USER_PROMPT_LAST + lastMessage.Content})
+		ProcessStream(ctx, settings, widgets, history)
 	}
 }
 
@@ -82,4 +89,33 @@ func GenerateID() string {
 	}
 
 	return timeHex
+}
+
+// 滚动维护 History 链表（不包括System）
+func UpdateHistory(history *list.List, message common.LLMMessage) {
+	// 使用滑动窗口截断历史记录
+	if HISTORY_LIST_LENGTH <= 0 {
+		return
+	}
+
+	if message.Role != "System" {
+		if history.Len() < HISTORY_LIST_LENGTH {
+			history.PushBack(message)
+		}else{
+			history.Remove(history.Front())
+			history.PushBack(message)
+		}
+	}
+}
+
+// 生成带或者不带System的历史记录，以便传入请求体
+func GenerateHistoryMessage(history *list.List, systemPrompt string) map[string]interface{} {
+	var historyMessage []common.LLMMessage
+	historyMessage = append(historyMessage, common.LLMMessage{Role: "System", Content: systemPrompt})
+	for e := history.Front(); e != nil; e = e.Next() {
+		historyMessage = append(historyMessage, e.Value.(common.LLMMessage))
+	}
+	return map[string]interface{}{
+		"messages": historyMessage,
+	}
 }

@@ -7,20 +7,8 @@ import (
 	"winds-assistant/utils"
 	"fmt"
 	"strings"
+	"winds-assistant/common"
 )
-
-type GPUStats struct {
-	Index		   uint64  `json:"index"`		 // GPU序号
-	Name		   string  `json:"name"`         // GPU名称
-    Utilization    float64 `json:"gpu_util"`     // GPU利用率(%) 
-    MemUsed        uint64  `json:"mem_used"`     // 显存使用量(MB)
-    MemTotal       uint64  `json:"mem_total"`    // 显存总量(MB)
-    CoreClock      uint64  `json:"core_clock"`   // 核心频率(MHz)
-    MemClock       uint64  `json:"mem_clock"`    // 显存频率(MHz)
-    Temperature    uint64  `json:"temp"`         // 温度(℃)
-    PowerDraw      float64 `json:"power"`        // 实时功耗(W)
-    Vendor         string  `json:"vendor"`       // 厂商(NVIDIA)
-}
 
 // 获取CPU信息
 func GetCPUInfo() (cpu.InfoStat, error) {
@@ -33,7 +21,7 @@ func GetCPUInfo() (cpu.InfoStat, error) {
 }
 
 // 获取NVIDIA GPU信息
-func GetNVGPUInfo() ([]GPUStats, error){
+func GetNVGPUInfo() ([]common.GPUStats, error){
 	out, _, err := utils.RunCommand("nvidia-smi", 
         "--query-gpu=index,name,utilization.gpu,memory.used,memory.total,clocks.current.graphics,clocks.current.memory,temperature.gpu,power.draw",
         "--format=csv,noheader,nounits")
@@ -42,7 +30,7 @@ func GetNVGPUInfo() ([]GPUStats, error){
 	}
 
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-    var stats []GPUStats
+    var stats []common.GPUStats
 
     for _, line := range lines {
         fields := strings.Split(line, ", ")
@@ -50,7 +38,7 @@ func GetNVGPUInfo() ([]GPUStats, error){
             continue // 跳过格式异常行
         }
 
-        stat := GPUStats{
+        stat := common.GPUStats{
 			Index:			utils.ParseUint(fields[0]),    // 字段0: index
 			Name:			fields[1],                     // 字段1: name
             Utilization:    utils.ParseFloat(fields[2]),   // 字段2: utilization.gpu

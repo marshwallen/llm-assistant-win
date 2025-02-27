@@ -12,7 +12,7 @@ import (
     "context"
 )
 
-// 流式调用Ollama的核心函数
+// 流式调用OpenAI接口的核心函数
 func ChatStream(ctx context.Context, settings common.Settings, widgets common.Widgets, streamCallback func(content string, done bool),
     options ...map[string]interface{}) error {
 
@@ -32,7 +32,7 @@ func ChatStream(ctx context.Context, settings common.Settings, widgets common.Wi
     reqBody, _ := json.Marshal(body)
     req, _ := http.NewRequest("POST", settings.URL+"/api/chat", bytes.NewBuffer(reqBody))
     req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", settings.Token)
+	req.Header.Set("Authorization", "Bearer " + settings.API_KEY)
 
     // 发送请求
     client := &http.Client{Timeout: 0} // 无超时限制
@@ -45,7 +45,7 @@ func ChatStream(ctx context.Context, settings common.Settings, widgets common.Wi
 
     // 检查状态码
     if resp.StatusCode != http.StatusOK {
-        return fmt.Errorf("error code: %d", resp.StatusCode)
+        return fmt.Errorf("error code: %d, req body: %+v", resp.StatusCode, body)
     }
 
     // 流式处理响应

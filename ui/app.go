@@ -1,12 +1,13 @@
 package ui
 
 import (
+	"container/list"
 	"context"
 	"fmt"
-	"sync"
 	"winds-assistant/common"
 	"winds-assistant/utils"
 	"winds-assistant/workers"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
@@ -19,7 +20,7 @@ func StartAPP() {
     window.Resize(fyne.NewSize(1024, 768))
 
     cfg, _ := utils.LoadCfg()
-    modelList := workers.GetModelList(cfg.Backend.Ollama.URL, window)
+    modelList := workers.GetModelList(cfg.Backend.OpenAI.URL, window)
 
     curModel := ""
     if len(modelList) > 0 {
@@ -28,28 +29,27 @@ func StartAPP() {
 
     ctx, cancel := context.WithCancel(context.Background())
     settings := common.Settings{
-        URL:         cfg.Backend.Ollama.URL,
-        Token:       cfg.Backend.Ollama.Token,
+        URL:         cfg.Backend.OpenAI.URL,
+        API_KEY:       cfg.Backend.OpenAI.API_KEY,
         Model:       curModel,
         ModelList:   modelList,
         CancelFunc:  cancel,
         DialogID:    GenerateID(),
-        EnableAgent: true,
+        EnableAgent: false,
+        SysPrompt:   workers.SYSTEM_PROMPT_DEFAULT,
     }
     
     // **Backend Settings**
-    history := map[string]interface{}{}
-    history["messages"] = []common.LLMMessage{}
-    history["messages"] = append(history["messages"].([]common.LLMMessage), common.LLMMessage{Role: "System", Content: workers.SYSTEM_PROMPT})
+    history := list.New()
     
-    widgets := MainWidgets(window, &settings, &history)
+    widgets := MainWidgets(window, &settings, history)
     widgets.InputEntry.OnSubmitted = func(text string) {
         // 提交前先检查模型存不存在
         if settings.Model == "" {
             common.ShowErrorDialog(window, fmt.Errorf("error: model not found"))
             return
         }
-        history["messages"] = append(history["messages"].([]common.LLMMessage), common.LLMMessage{Role: "User", Content: text})
+        UpdateHistory(history, common.LLMMessage{Role: "User", Content: text})
         widgets.ChatDisplay.SetText(widgets.ChatDisplay.Text + fmt.Sprintf("%s\n%s\n\n", common.CHAT_USER_INFO, text))
         widgets.InputEntry.SetText("")
         widgets.ChatScroll.ScrollToBottom()
@@ -57,22 +57,17 @@ func StartAPP() {
         ctx, cancel = context.WithCancel(context.Background())
         settings.CancelFunc = cancel
 
-        var wg sync.WaitGroup
-        wg.Add(1)
-        go ProcessStream(ctx, &wg, settings, widgets, history)
+        widgets.ChatDisplay.SetText(fmt.Sprintf("%s%s\n", 
+            widgets.ChatDisplay.Text,
+            common.CHAT_ASSISTANT_INFO,
+		))
+	    widgets.ChatScroll.ScrollToBottom()
+
         if settings.EnableAgent{
-            wg.Wait()
-            messagesList := history["messages"].([]common.LLMMessage)
-            lastMessage := messagesList[len(messagesList)-1]
-            if lastMessage.Role == "Agent" {
-                history["messages"] = append(history["messages"].([]common.LLMMessage), common.LLMMessage{
-                    Role: "User", Content: workers.USER_PROMPT_LAST + lastMessage.Content,
-                })
-                wg.Add(1)
-                go ProcessStream(ctx, &wg, settings, widgets, history)
-            }  
+            go ProcessStreamWithTools(ctx, settings, widgets, history)
+        }else{
+            go ProcessStream(ctx, settings, widgets, history)
         }
-        wg.Wait()
     }
 
     // **APP Start**

@@ -5,6 +5,9 @@ import (
     "fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
     "fyne.io/fyne/v2"
+    "github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 // 解析 /api/chat
@@ -31,21 +34,22 @@ type ModelListResponse struct {
 // 用户设置
 type Settings struct {
     URL         string              // API 地址
-    Token       string              // API 密钥
+    API_KEY       string            // API 密钥
     Model       string              // 当前选中的模型
     ModelList   []string            // 模型列表
     CancelFunc  context.CancelFunc  // 是否停止对话
     DialogID    string              // 对话 ID
     EnableAgent bool                // 是否启用Agent调用系统能力
+    SysPrompt   string              // 系统 Prompt
 }
 
 // 配置文件解析
 type LLMConfig struct {
     Backend struct {
-        Ollama struct {
+        OpenAI struct {
             URL      string `yaml:"url"`
-            Token    string `yaml:"token"`
-        } `yaml:"ollama"`
+            API_KEY    string `yaml:"api_key"`
+        } `yaml:"openai"`
     } `yaml:"backend"`
 }
 
@@ -57,17 +61,23 @@ type Widgets struct {
 	InputEntry 	*widget.Entry
 }
 
-// 构造 Get-WinEvent 查询体
-type EventQuery struct {
-    LogName   string        `json:"logName"`     // 日志类型 (Application, Security, System, etc.)
-    StartTime  int          `json:"startTime"`   // 起始时间 (正数，代表往前推多少天)
-    MaxEvents  int          `json:"maxEvents"`   // 最大事件数
+type GPUStats struct {
+	Index		   uint64  `json:"index"`		 // GPU序号
+	Name		   string  `json:"name"`         // GPU名称
+    Utilization    float64 `json:"gpu_util"`     // GPU利用率(%) 
+    MemUsed        uint64  `json:"mem_used"`     // 显存使用量(MB)
+    MemTotal       uint64  `json:"mem_total"`    // 显存总量(MB)
+    CoreClock      uint64  `json:"core_clock"`   // 核心频率(MHz)
+    MemClock       uint64  `json:"mem_clock"`    // 显存频率(MHz)
+    Temperature    uint64  `json:"temp"`         // 温度(℃)
+    PowerDraw      float64 `json:"power"`        // 实时功耗(W)
+    Vendor         string  `json:"vendor"`       // 厂商(NVIDIA)
 }
 
-type FileTreeQuery struct {
-    Disk        []string    `json:"disk"`
-}
-
-type SysHealthQuery struct {
-    Minutes     int         `json:"minutes"`
+type MetricData struct {
+	CPU  cpu.InfoStat
+	Mem  *mem.VirtualMemoryStat
+	Disk *disk.UsageStat
+	GPU  []GPUStats
+	Time int64
 }

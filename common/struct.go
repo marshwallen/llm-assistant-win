@@ -54,7 +54,7 @@ type LLMConfig struct {
     } `yaml:"backend"`
 }
 
-type GPUStats struct {
+type GPUInfoStat struct {
 	Index		   uint64  `json:"index"`		 // GPU序号
 	Name		   string  `json:"name"`         // GPU名称
     Utilization    float64 `json:"gpu_util"`     // GPU利用率(%) 
@@ -67,11 +67,16 @@ type GPUStats struct {
     Vendor         string  `json:"vendor"`       // 厂商(NVIDIA)
 }
 
+type CPUInfoStat struct{
+    Base           cpu.InfoStat                  // CPU信息
+    Percent        float64                       // CPU利用率
+}
+
 type MetricData struct {
-	CPU  cpu.InfoStat
+	CPU  CPUInfoStat
 	Mem  *mem.VirtualMemoryStat
 	Disk *disk.UsageStat
-	GPU  []GPUStats
+	GPU  []GPUInfoStat
 	Time int64
 }
 

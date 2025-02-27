@@ -158,7 +158,7 @@ func storeMetrics(ctx context.Context, writers map[string]*utils.CSVWriter, data
 // 将一批 MetricData 写入 CSV 文件。
 func writeBatchToCSV(batch []common.MetricData) {
     for _, data := range batch {
-        dailyWriter.WriteMetric(data.Time, "cpu_clock", data.CPU.Mhz, "MHz")
+        dailyWriter.WriteMetric(data.Time, "cpu_percent", data.CPU.Percent, "%")
         dailyWriter.WriteMetric(data.Time, "mem_used", float64(data.Mem.Used), "bytes")
         dailyWriter.WriteMetric(data.Time, "disk_used", float64(data.Disk.Used), "bytes")
         

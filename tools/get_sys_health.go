@@ -14,17 +14,23 @@ import (
 )
 
 // 获取CPU信息
-func GetCPUInfo() (cpu.InfoStat, error) {
-	var ret cpu.InfoStat
-	percent, err := cpu.Info()
+func GetCPUInfo() (common.CPUInfoStat, error) {
+	var ret common.CPUInfoStat
+	cpuInfoStat, err := cpu.Info()
 	if err != nil {
 		return ret, err
 	}
-	return percent[0], nil
+	percent, _ := cpu.Percent(time.Second, false)
+
+	ret = common.CPUInfoStat{
+		Base: cpuInfoStat[0],
+		Percent: percent[0],
+	}
+	return ret, nil
 }
 
 // 获取NVIDIA GPU信息
-func GetNVGPUInfo() ([]common.GPUStats, error){
+func GetNVGPUInfo() ([]common.GPUInfoStat, error){
 	out, _, err := utils.RunCommand("nvidia-smi", 
         "--query-gpu=index,name,utilization.gpu,memory.used,memory.total,clocks.current.graphics,clocks.current.memory,temperature.gpu,power.draw",
         "--format=csv,noheader,nounits")
@@ -33,7 +39,7 @@ func GetNVGPUInfo() ([]common.GPUStats, error){
 	}
 
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-    var stats []common.GPUStats
+    var stats []common.GPUInfoStat
 
     for _, line := range lines {
         fields := strings.Split(line, ", ")
@@ -41,7 +47,7 @@ func GetNVGPUInfo() ([]common.GPUStats, error){
             continue // 跳过格式异常行
         }
 
-        stat := common.GPUStats{
+        stat := common.GPUInfoStat{
 			Index:			utils.ParseUint(fields[0]),    // 字段0: index
 			Name:			fields[1],                     // 字段1: name
             Utilization:    utils.ParseFloat(fields[2]),   // 字段2: utilization.gpu
@@ -80,7 +86,7 @@ func GetDiskInfo() (*disk.UsageStat, error) {
 }
 
 var metrics = map[string]string{
-	"cpu_clock": "MHz", 
+	"cpu_percent": "%", 
 	"mem_used": "bytes", 
 	"disk_used": "bytes",
 	"gpu_util": "%", 

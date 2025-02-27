@@ -53,7 +53,13 @@ func AgentParser(rawOutput string) (useTool bool, output string){
 
 	for k, v := range toolsMap {
 		if q, ok := v.(map[string]interface{}); ok {
-			output += ToolsFuncRegister[k](q)
+			f, exists := ToolsFuncRegister[k]
+			if !exists {
+				output += fmt.Sprintf("Invalid tool %s\n", k)
+				continue
+			}else{
+				output += f(q)
+			}
 		} else {
 			output += fmt.Sprintf("Invalid type for %s\n", k)
 		}

@@ -4,17 +4,20 @@ import (
 	"winds-assistant/tools"
 )
 
-// Register Agent Tools
+// ** Register Agent Tools
 var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 	"get_win_event": getWinEvent,
 	"get_file_tree": getFileTree,
 	"get_sys_health": getSysHealth,
+	"get_sys_process": getSysProcess,
 }
 
+// ** Register Agent Tools Prompt
 var ToolsPromptRegister = []string{
 	GET_WIN_EVENT_PROMPT,
 	GET_FILE_TREE_PROMPT,
 	GET_SYS_HEALTH_PROMPT,
+	GET_SYS_PROCESS_PROMPT,
 }
 
 // 在这里写 Agent Tools 的函数入口
@@ -93,4 +96,29 @@ func getSysHealth(q map[string]interface{}) string{
 	_o, _ := tools.GetSysHealthData(minutes)
 	output := "<get_sys_health> 返回结果：" + _o
 	return output
+}
+
+const GET_SYS_PROCESS_PROMPT = `
+工具 <get_sys_process> 使用规则：
+1. 如果用户提到了 <分析系统进程、查看运行情况> 等类似的需求，你可以使用 <get_sys_process> 工具来获取系统进程信息。
+2. 你需要结合多个指标对系统状态进行分析, 如进程的CPU, 内存 ,执行路径 ,启动参数 ,运行状态 ,线程/句柄数 ,IO 统计等详细信息, 查找潜在问题。
+3. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
+{
+	"tools": {
+		"get_sys_process": {                          
+			"enable": true
+		}
+	}
+}
+`
+// 根据传入的参数判断是否启用获取系统进程信息
+func getSysProcess(q map[string]interface{}) string{
+	enable, _ := q["enable"].(bool)
+	if enable {
+		// 获取系统进程信息
+		_o := tools.GetSysProcessStr()
+		output := "<get_sys_process> 返回结果：" + _o
+		return output
+	}
+	return ""
 }

@@ -19,9 +19,9 @@ const (
     // 输入框的最大长度
     MaxInputLength = 2048
     // 聊天窗口一次渲染的最大文本长度
-    MaxChatMessageLength = 2048
+    MaxChatMessageLength = 4096
     // 聊天滑动窗口单边缓冲区大小
-    SideCacheSize = 64   
+    SideCacheSize = 64  
 )
 
 // 创建并返回一个主布局，包含侧边栏和聊天窗口

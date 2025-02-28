@@ -57,7 +57,7 @@ func ChatReqStream(ctx context.Context, settings *common.Settings, widgets commo
     }
 
     var leftover []byte
-    buf := make([]byte, 1024)
+    buf := make([]byte, 4096)
     for {
         select {
         case <-ctx.Done():

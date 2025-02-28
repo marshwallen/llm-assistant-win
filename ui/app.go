@@ -20,7 +20,7 @@ func StartAPP() {
     window.Resize(fyne.NewSize(1024, 768))
 
     cfg, _ := utils.LoadCfg()
-    fastCliboard, _ := utils.ReadTxtFile("data/fast_cliboard.txt")
+    fastCliboard, _ := utils.ReadTxtFile("config/fast_cliboard.txt")
 
     var modelList []string
     if cfg.Default == "ollama" {

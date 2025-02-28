@@ -298,7 +298,7 @@ func showFastCliboard(parent fyne.Window, settings *common.Settings) {
         "Confirm", "Cancel",
         container, func(save bool) {
             settings.FastCliboard = fastEntry.Text
-            utils.EnsureDir("data/")
-            utils.WriteTxtFile("data/fast_cliboard.txt", settings.FastCliboard)
+            utils.EnsureDir("config/")
+            utils.WriteTxtFile("config/fast_cliboard.txt", settings.FastCliboard)
         }, parent)
 }

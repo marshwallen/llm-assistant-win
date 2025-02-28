@@ -122,6 +122,15 @@ func (cp *ChatChunkProcessor) RenderPreText() string {
 	// return cp.GetString()
 }
 
+func (cp *ChatChunkProcessor) RenderFinalText() string {
+	cp.RightPointer = cp.textLength - 1
+	nextL := cp.RightPointer - 2*cp.SideCacheSize - cp.WindowSize
+	if cp.LeftPointer < nextL {
+		cp.LeftPointer = nextL
+	}
+	return string(cp.textBytes[cp.LeftPointer:cp.RightPointer+1])	
+}
+
 // 优化频繁对字符串进行切片时带来的开销
 var bufferPool = sync.Pool{
     New: func() interface{} {

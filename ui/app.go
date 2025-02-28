@@ -73,8 +73,9 @@ func StartAPP() {
         settings.CancelFunc = cancel
 
         widgets.ChatChunk.Process(common.CHAT_ASSISTANT_INFO)
-        widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+        widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderFinalText())
         widgets.ChatScroll.ScrollToBottom()
+
         if settings.EnableAgent{
             go ProcessStreamWithTools(ctx, &settings, widgets, history)
         }else{

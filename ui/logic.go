@@ -30,7 +30,7 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
         func(content string, done bool) {
             // 流式实时输出
 			widgets.ChatChunk.Process(content)
-        	widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+        	widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderFinalText())
 			widgets.ChatScroll.ScrollToBottom()
 			
             // 累积内容分块
@@ -41,18 +41,18 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 				if useTool{
 					widgets.ChatChunk.Process(common.CHAT_AGENT_MID + midOutput)
         			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
-
 					UpdateHistory(history, common.LLMMessage{Role: "midresult", Content: midOutput})
 				// 否则，midOutput 为直接返回的 Assistant 的回答
 				}else{
 					widgets.ChatChunk.Process(common.CHAT_END)
         			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
-
+					
 					UpdateHistory(history, common.LLMMessage{Role: "assistant", Content: contentBuffer.String()})
 				}
 				contentBuffer.Reset() 
 				settings.Running = false
             }
+			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderFinalText())
 			widgets.ChatScroll.ScrollToBottom()
         },
         // 输入对话历史

@@ -63,7 +63,7 @@ func ChatReqStream(ctx context.Context, settings *common.Settings, widgets commo
         case <-ctx.Done():
             settings.Running = false
             widgets.ChatChunk.Process(common.CHAT_TERMINATE)
-            widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+            widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderFinalText())
             widgets.ChatScroll.ScrollToBottom()
             return nil
         default:

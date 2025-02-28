@@ -33,9 +33,9 @@ func ChatReqStream(ctx context.Context, settings *common.Settings, widgets commo
 
     var req *http.Request
     if settings.BackendName == "ollama" {
-        req, _ = http.NewRequest("POST", settings.BackendCfg.BaseURL + "/api/chat", bytes.NewBuffer(reqBody))
+        req, _ = http.NewRequestWithContext(ctx, "POST", settings.BackendCfg.BaseURL + "/api/chat", bytes.NewBuffer(reqBody))
     }else{
-        req, _ = http.NewRequest("POST", settings.BackendCfg.BaseURL, bytes.NewBuffer(reqBody))
+        req, _ = http.NewRequestWithContext(ctx, "POST", settings.BackendCfg.BaseURL, bytes.NewBuffer(reqBody))
     }
     
     req.Header.Set("Content-Type", "application/json")

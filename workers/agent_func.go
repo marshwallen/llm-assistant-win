@@ -11,6 +11,7 @@ var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 	"get_sys_health": getSysHealth,
 	"get_sys_process": getSysProcess,
 	"get_sys_driver": getSysDriver,
+	"get_bili_rcmd": getBiliRcmd,
 }
 
 // ** Register Agent Tools Prompt
@@ -20,6 +21,7 @@ var ToolsPromptRegister = []string{
 	GET_SYS_HEALTH_PROMPT,
 	GET_SYS_PROCESS_PROMPT,
 	GET_SYS_DRIVER_PROMPT,
+	GET_BILI_RCMD_PROMPT,
 }
 
 // 在这里写 Agent Tools 的函数入口
@@ -146,4 +148,28 @@ func getSysDriver(q map[string]interface{}) string{
 		return output
 	}
 	return ""
+}
+
+const GET_BILI_RCMD_PROMPT = `
+工具 <get_bili_rcmd> 使用规则：
+1. 如果用户提到了 <B站视频推荐> 等类似的需求, 你可以使用 <get_bili_rcmd> 工具来获取系统进程信息。
+2. 你的目的是根据用户的需求过滤得到的视频列表, 筛选出用户喜爱且高质量的视频给用户(包括BV号、UP主、标题、视频长度、播放数、弹幕数、点赞数、推荐理由、视频链接等重要信息)
+3. 用户可能会给你一个cookie, 你可以通过在下面的json中加入该cookie, 从而获取用户喜欢的视频。如果没给, 就保持空字符串""。
+4. rounds是需要获取几轮推荐。如果用户没有特别指出, 就保持默认的1。
+5. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
+{
+	"tools": {
+		"get_bili_rcmd": {						  
+			"cookie": "xxx"
+			"rounds": 1,
+		}
+	}
+}`
+
+func getBiliRcmd(q map[string]interface{}) string{
+	cookie, _ := q["cookie"].(string)
+	rounds, _ := q["rounds"].(float64)
+	_o := tools.GetBiliRcmdStr(cookie, int(rounds))
+	output := "<get_bili_rcmd> 返回结果：" + _o
+	return output
 }

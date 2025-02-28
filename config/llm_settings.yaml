@@ -1,4 +1,14 @@
 backend:
-  openai:
-    url: http://10.147.17.209:11434
-    api_key: 
+    ollama:
+        base_url: http://10.147.17.209:11434
+        api_key: 
+        model: 
+    qwen:
+        base_url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+        api_key: 
+        model: qwen-plus
+    volcengine:
+        base_url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+        api_key: 
+        model: deepseek-r1-250120
+default_backend: volcengine

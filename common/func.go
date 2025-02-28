@@ -99,8 +99,8 @@ func (cp *ChatChunkProcessor) RenderNextText() string {
 	if cp.LeftPointer < nextL {
 		cp.LeftPointer = nextL
 	}
-	// return string(cp.textBytes[cp.LeftPointer:cp.RightPointer+1])
-	return cp.GetString()
+	return string(cp.textBytes[cp.LeftPointer:cp.RightPointer+1])
+	// return cp.GetString()
 }
 
 // 渲染上一块文字
@@ -118,8 +118,8 @@ func (cp *ChatChunkProcessor) RenderPreText() string {
 	if cp.RightPointer > nextR {
 		cp.RightPointer = nextR
 	}
-	// return string(cp.textBytes[cp.LeftPointer:cp.RightPointer+1])
-	return cp.GetString()
+	return string(cp.textBytes[cp.LeftPointer:cp.RightPointer+1])
+	// return cp.GetString()
 }
 
 // 优化频繁对字符串进行切片时带来的开销

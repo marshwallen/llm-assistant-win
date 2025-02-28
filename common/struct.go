@@ -2,29 +2,24 @@ package common
 
 import (
 	"context"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
-    "fyne.io/fyne/v2"
-    "fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 )
 
-// 解析 /api/chat
 type LLMMessage struct {
-    Role 		string `json:"role"`
-    Content 	string `json:"content"`
+    Role 		   string `json:"role"`
+    Content 	   string `json:"content"`
 }
-type Chan struct {
-    Message 	LLMMessage  `json:"message"`
-    Done     	bool   		`json:"done"`
-}
-// 解析/api/tags
+
 type Model struct {
-    Name       string `json:"name"`
-    ModifiedAt string `json:"modified_at"`
-    Size       int64  `json:"size"`
-    Digest     string `json:"digest"`
+    Name           string `json:"name"`
+    ModifiedAt     string `json:"modified_at"`
+    Size           int64  `json:"size"`
+    Digest         string `json:"digest"`
 }
 // 模型列表
 type ModelListResponse struct {
@@ -33,25 +28,26 @@ type ModelListResponse struct {
 
 // 用户设置
 type Settings struct {
-    URL         string              // API 地址
-    API_KEY       string            // API 密钥
-    Model       string              // 当前选中的模型
-    ModelList   []string            // 模型列表
-    CancelFunc  context.CancelFunc  // 是否停止对话
-    DialogID    string              // 对话 ID
-    EnableAgent bool                // 是否启用Agent调用系统能力
-    SysPrompt   string              // 系统 Prompt
-    Running     bool                // 是否正在对话
+    BackendName    string                  // 后端名称
+    BackendCfg     BackendConfig           // 后端配置
+    ModelList      []string                // 模型列表
+    CancelFunc     context.CancelFunc      // 上下文取消函数
+    DialogID       string                  // 对话 ID
+    EnableAgent    bool                    // 是否启用Agent调用系统能力
+    SysPrompt      string                  // 系统 Prompt
+    Running        bool                    // 是否正在对话
 }
 
 // 配置文件解析
 type LLMConfig struct {
-    Backend struct {
-        OpenAI struct {
-            URL      string `yaml:"url"`
-            API_KEY    string `yaml:"api_key"`
-        } `yaml:"openai"`
-    } `yaml:"backend"`
+    Backend        map[string]BackendConfig `yaml:"backend"`     // 后端配置
+    Default        string                   `yaml:"default_backend"`     // 默认后端
+}
+
+type BackendConfig struct {
+    BaseURL        string `yaml:"base_url"`    // LLM后端地址
+    APIKey         string `yaml:"api_key"`     // API Key
+    Model          string `yaml:"model"`       // 模型名称
 }
 
 type GPUInfoStat struct {
@@ -73,18 +69,18 @@ type CPUInfoStat struct{
 }
 
 type MetricData struct {
-	CPU  CPUInfoStat
-	Mem  *mem.VirtualMemoryStat
-	Disk *disk.UsageStat
-	GPU  []GPUInfoStat
-	Time int64
+	CPU            CPUInfoStat
+	Mem            *mem.VirtualMemoryStat
+	Disk           *disk.UsageStat
+	GPU            []GPUInfoStat
+	Time           int64
 }
 
 type Widgets struct {
-    Window          fyne.Window
-	MainSplit 	    *container.Split
-	ChatDisplay     *widget.Label
-	ChatScroll 	    *SmartScroll
-	InputEntry 	    *widget.Entry
-    ChatChunk       *ChatChunkProcessor
+    Window         fyne.Window
+	MainSplit 	   *container.Split
+	ChatDisplay    *widget.Label
+	ChatScroll 	   *SmartScroll
+	InputEntry 	   *widget.Entry
+    ChatChunk      *ChatChunkProcessor
 }

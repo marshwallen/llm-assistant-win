@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"winds-assistant/common"
+	"winds-assistant/utils"
 	"winds-assistant/workers"
 
 	"fyne.io/fyne/v2"
@@ -24,7 +25,7 @@ const (
 )
 
 // 创建并返回一个主布局，包含侧边栏和聊天窗口
-func MainWidgets(window fyne.Window, settings *common.Settings, history *list.List) (common.Widgets){
+func MainWidgets(window fyne.Window, history *list.List, settings *common.Settings, cfg *common.LLMConfig) (common.Widgets){
     // 侧边信息栏
     modelTitle := widget.NewLabel("") 
     modelTitle.Wrapping = fyne.TextWrapWord
@@ -102,7 +103,7 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
             clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
             clipboard.SetContent(chatDisplay.Text)
         }),
-        widget.NewButton(common.WIDGET_SWITCH_AGENT, func() {
+        widget.NewButton(common.WIDGET_AGENT_SWITCH, func() {
             if settings.EnableAgent{
                 settings.SysPrompt = workers.SYSTEM_PROMPT_DEFAULT
                 settings.EnableAgent = false
@@ -113,18 +114,31 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
             updateSidebarInfo(modelTitle, settings)
         }),
         widget.NewButton(common.WIDGET_SETTING, func() {
-            showSettingsDialog(window, modelTitle, settings)
+            if settings.Running{
+                common.ShowErrorDialog(window, fmt.Errorf("info: assistant is running, terminate it first"))
+                return
+            }
+            showSettingsDialog(window, modelTitle, settings, cfg)
         }),
         widget.NewButton(common.WIDGET_REFRESH, func() {
-            modelList := workers.GetModelList(settings.URL, window)
-            if len(modelList) > 0 {
-                settings.Model = modelList[0]
+            if settings.BackendName == "ollama" {
+                modelList := workers.GetModelList(settings.BackendCfg.BaseURL, window)
+                if len(modelList) > 0 {
+                    settings.BackendCfg.Model = modelList[0]
+                }
+                settings.ModelList = modelList
             }
-            settings.ModelList = modelList
             updateSidebarInfo(modelTitle, settings)
         }),
         modelTitle,
         layout.NewSpacer(),
+        widget.NewButton(common.WIDGET_BACKEND_SETTING, func() {
+            if settings.Running{
+                common.ShowErrorDialog(window, fmt.Errorf("info: assistant is running, terminate it first"))
+                return
+            }
+            showBackendSettingDialog(window, modelTitle, settings, cfg)
+        }),
     )
 
     // 主布局
@@ -144,22 +158,34 @@ func MainWidgets(window fyne.Window, settings *common.Settings, history *list.Li
 }
 
 // 设置对话框
-func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *common.Settings) {
+func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *common.Settings, cfg *common.LLMConfig) {
     url := widget.NewEntry()
-    url.SetText(settings.URL)
+    url.SetText(settings.BackendCfg.BaseURL)
 
     apikey := widget.NewEntry()
-    apikey.SetText(settings.API_KEY)
+    apikey.SetText(settings.BackendCfg.APIKey)
 
     modelSelect := widget.NewSelect([]string{common.WIDGET_LOADING}, func(s string) {})
     modelSelect.SetOptions(settings.ModelList)
-    modelSelect.SetSelected(settings.Model)
+    modelSelect.SetSelected(settings.BackendCfg.Model)
+
+    model := widget.NewEntry()
+    model.SetText(settings.BackendCfg.Model)
+
+    // 只有ollama后端可以自主选择模型
+    if settings.BackendName == "ollama" {
+        model.Disable()
+    }else{
+        modelSelect.Disable()
+        url.Disable()
+    }
     
     // 构建对话框内容
     form := widget.NewForm(
         widget.NewFormItem(common.WIDGET_FORM_URL, url),
         widget.NewFormItem(common.WIDGET_FORM_APIKEY, apikey),
         widget.NewFormItem(common.WIDGET_FORM_MODEL_SELECT, modelSelect),
+        widget.NewFormItem(common.WIDGET_CURRENT_MODEL, model),
     )
 
     dialog.ShowCustomConfirm("", common.WIDGET_DIALOG_SAVE, common.WIDGET_DIALOG_CANCEL,
@@ -167,24 +193,86 @@ func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *
         func(save bool) {
             if save {
                 // 获取选中的值
-                settings.URL = url.Text
-                settings.API_KEY = apikey.Text
-                settings.Model = modelSelect.Selected
+                settings.BackendCfg.BaseURL = url.Text
+                settings.BackendCfg.APIKey = apikey.Text
+                if settings.BackendName == "ollama" {
+                    settings.BackendCfg.Model = modelSelect.Selected
+                    model.SetText(settings.BackendCfg.Model)
+                }else{
+                    settings.BackendCfg.Model = model.Text 
+                    settings.ModelList = []string{settings.BackendCfg.Model}
+                }
                 updateSidebarInfo(modelTitle, settings)
+
+                // 保存配置到文件中
+                cfg.Backend[settings.BackendName] = settings.BackendCfg
+                cfg.Default = settings.BackendName
+                utils.SaveCfg(cfg)
             }
         }, parent)
 }
 
 // 更新侧边栏信息
 func updateSidebarInfo(sidebar *widget.Label, settings *common.Settings) {
-    sidebar.SetText(fmt.Sprintf("%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%v\n", 
+    sideText := []string{
+        // Backend
+        common.SYSTEM_BACKEND_INFO,
+        common.BACKEND_MAP[settings.BackendName],
+        "",
+
+        // URL
         common.SYSTEM_URL_INFO,
-        settings.URL,
+        settings.BackendCfg.BaseURL,
+        "",
+
+        // Model
         common.SYSTEM_MODEL_INFO,
-        settings.Model,
+        settings.BackendCfg.Model,
+        "",
+
+        // Dialog ID
         common.SYSTEM_DIALOG_ID_INFO,
         settings.DialogID,
+        "",
+
+        // Agent Status
         common.SYSTEM_AGENT_STATUS_INFO,
-        settings.EnableAgent,
-    ))
+        fmt.Sprintf("%v", settings.EnableAgent),
+    }
+    sidebar.SetText(strings.Join(sideText, "\n"))
+}
+
+func showBackendSettingDialog(parent fyne.Window, modelTitle *widget.Label, settings *common.Settings, cfg *common.LLMConfig) {
+    // Backend 选择器
+    backendSelect := widget.NewSelect([]string{common.WIDGET_LOADING}, func(s string) {})
+    var backends []string
+    for name := range cfg.Backend {
+        backends = append(backends, name)
+    }
+    backendSelect.SetOptions(backends)
+    backendSelect.SetSelected(settings.BackendName)
+
+    // 构建对话框内容
+    form := widget.NewForm(
+        widget.NewFormItem(common.WIDGET_FORM_BACKEND, backendSelect),
+    )
+
+    dialog.ShowCustomConfirm("", common.WIDGET_DIALOG_SAVE, common.WIDGET_DIALOG_CANCEL,
+        container.NewVBox(form),
+        func(save bool) {
+            if save {
+                choice := backendSelect.Selected
+                settings.BackendName = choice
+                settings.BackendCfg = cfg.Backend[choice]
+                if choice == "ollama" {
+                    settings.ModelList = workers.GetModelList(settings.BackendCfg.BaseURL, parent)
+                }
+
+                // 保存配置文件
+                cfg.Default = choice
+                utils.SaveCfg(cfg)
+                // 刷新
+                updateSidebarInfo(modelTitle, settings)
+            }
+        }, parent)
 }

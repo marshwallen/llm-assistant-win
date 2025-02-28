@@ -22,7 +22,7 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 	settings.Running = true
 	var contentBuffer bytes.Buffer
 
-    err := workers.ChatStream(
+    err := workers.ChatReqStream(
 		ctx,
 		settings,
 		widgets,
@@ -42,13 +42,13 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 					widgets.ChatChunk.Process(common.CHAT_AGENT_MID + midOutput)
         			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
 
-					UpdateHistory(history, common.LLMMessage{Role: "MidResult", Content: midOutput})
+					UpdateHistory(history, common.LLMMessage{Role: "midresult", Content: midOutput})
 				// 否则，midOutput 为直接返回的 Assistant 的回答
 				}else{
 					widgets.ChatChunk.Process(common.CHAT_END)
         			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
 
-					UpdateHistory(history, common.LLMMessage{Role: "Assistant", Content: contentBuffer.String()})
+					UpdateHistory(history, common.LLMMessage{Role: "assistant", Content: contentBuffer.String()})
 				}
 				contentBuffer.Reset() 
 				settings.Running = false
@@ -60,6 +60,7 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 	)
 
 	if err != nil {
+		settings.Running = false
 		common.ShowErrorDialog(widgets.Window, err)
 	}
 }
@@ -69,9 +70,9 @@ func ProcessStreamWithTools(ctx context.Context, settings *common.Settings, widg
 	ProcessStream(ctx, settings, widgets, history)
 	lastMessage := history.Back().Value.(common.LLMMessage)
 
-	if lastMessage.Role == "MidResult" {
+	if lastMessage.Role == "midresult" {
 		history.Remove(history.Back())
-		UpdateHistory(history, common.LLMMessage{Role: "User", Content: workers.USER_PROMPT_WITH_TOOLS + lastMessage.Content})
+		UpdateHistory(history, common.LLMMessage{Role: "user", Content: workers.USER_PROMPT_WITH_TOOLS + lastMessage.Content})
 		ProcessStream(ctx, settings, widgets, history)
 	}
 }
@@ -120,7 +121,7 @@ func UpdateHistory(history *list.List, message common.LLMMessage) {
 // 生成带或者不带System的历史记录，以便传入请求体
 func GenerateHistoryMessage(history *list.List, systemPrompt string) map[string]interface{} {
 	var historyMessage []common.LLMMessage
-	historyMessage = append(historyMessage, common.LLMMessage{Role: "System", Content: systemPrompt})
+	historyMessage = append(historyMessage, common.LLMMessage{Role: "system", Content: systemPrompt})
 	for e := history.Front(); e != nil; e = e.Next() {
 		historyMessage = append(historyMessage, e.Value.(common.LLMMessage))
 	}

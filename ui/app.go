@@ -20,18 +20,24 @@ func StartAPP() {
     window.Resize(fyne.NewSize(1024, 768))
 
     cfg, _ := utils.LoadCfg()
-    modelList := workers.GetModelList(cfg.Backend.OpenAI.URL, window)
 
-    curModel := ""
+    var modelList []string
+    if cfg.Default == "ollama" {
+        modelList = workers.GetModelList(cfg.Backend[cfg.Default].BaseURL, window)
+    }else{
+        modelList = []string{cfg.Backend[cfg.Default].Model}
+    }
+    
     if len(modelList) > 0 {
-        curModel = modelList[0]
+        backend := cfg.Backend[cfg.Default]
+        backend.Model = modelList[0]
+        cfg.Backend[cfg.Default] = backend
     }
 
     ctx, cancel := context.WithCancel(context.Background())
     settings := common.Settings{
-        URL:         cfg.Backend.OpenAI.URL,
-        API_KEY:       cfg.Backend.OpenAI.API_KEY,
-        Model:       curModel,
+        BackendName: cfg.Default,
+        BackendCfg:  cfg.Backend[cfg.Default],
         ModelList:   modelList,
         CancelFunc:  cancel,
         DialogID:    GenerateID(),
@@ -43,10 +49,10 @@ func StartAPP() {
     // **Backend Settings**
     history := list.New()
     
-    widgets := MainWidgets(window, &settings, history)
+    widgets := MainWidgets(window, history, &settings, cfg)
     widgets.InputEntry.OnSubmitted = func(text string) {
         // 提交前先检查模型存不存在
-        if settings.Model == "" {
+        if settings.BackendCfg.Model == "" {
             common.ShowErrorDialog(window, fmt.Errorf("error: model not found"))
             return
         }
@@ -55,7 +61,7 @@ func StartAPP() {
             common.ShowErrorDialog(window, fmt.Errorf("info: assistant is running, terminate it first"))
             return
         }
-        UpdateHistory(history, common.LLMMessage{Role: "User", Content: text})
+        UpdateHistory(history, common.LLMMessage{Role: "user", Content: text})
         widgets.InputEntry.SetText("")
 
         widgets.ChatChunk.Process(fmt.Sprintf("%s%s\n", common.CHAT_USER_INFO, text))

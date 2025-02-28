@@ -31,6 +31,7 @@ type Settings struct {
     BackendName    string                  // 后端名称
     BackendCfg     BackendConfig           // 后端配置
     ModelList      []string                // 模型列表
+    FastCliboard   string                  // 快捷指令
     CancelFunc     context.CancelFunc      // 上下文取消函数
     DialogID       string                  // 对话 ID
     EnableAgent    bool                    // 是否启用Agent调用系统能力

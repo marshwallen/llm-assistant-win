@@ -20,6 +20,7 @@ func StartAPP() {
     window.Resize(fyne.NewSize(1024, 768))
 
     cfg, _ := utils.LoadCfg()
+    fastCliboard, _ := utils.ReadTxtFile("data/fast_cliboard.txt")
 
     var modelList []string
     if cfg.Default == "ollama" {
@@ -36,14 +37,15 @@ func StartAPP() {
 
     ctx, cancel := context.WithCancel(context.Background())
     settings := common.Settings{
-        BackendName: cfg.Default,
-        BackendCfg:  cfg.Backend[cfg.Default],
-        ModelList:   modelList,
-        CancelFunc:  cancel,
-        DialogID:    GenerateID(),
-        EnableAgent: false,
-        SysPrompt:   workers.SYSTEM_PROMPT_DEFAULT,
-        Running:     false,
+        BackendName:    cfg.Default,
+        BackendCfg:     cfg.Backend[cfg.Default],
+        ModelList:      modelList,
+        CancelFunc:     cancel,
+        DialogID:       GenerateID(),
+        EnableAgent:    false,
+        SysPrompt:      workers.SYSTEM_PROMPT_DEFAULT,
+        Running:        false,
+        FastCliboard:   fastCliboard,
     }
     
     // **Backend Settings**

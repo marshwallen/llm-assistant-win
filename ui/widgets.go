@@ -132,6 +132,9 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
         }),
         modelTitle,
         layout.NewSpacer(),
+        widget.NewButton(common.WIDGET_FASTCLIBOARD, func() {
+            showFastCliboard(window, settings)
+        }),
         widget.NewButton(common.WIDGET_BACKEND_SETTING, func() {
             if settings.Running{
                 common.ShowErrorDialog(window, fmt.Errorf("info: assistant is running, terminate it first"))
@@ -274,5 +277,28 @@ func showBackendSettingDialog(parent fyne.Window, modelTitle *widget.Label, sett
                 // 刷新
                 updateSidebarInfo(modelTitle, settings)
             }
+        }, parent)
+}
+
+func showFastCliboard(parent fyne.Window, settings *common.Settings) {
+    // 快捷指令板
+    fastEntry := widget.NewMultiLineEntry()
+    fastEntry.Wrapping = fyne.TextWrapWord
+    fastEntry.SetText(settings.FastCliboard)
+    fastEntry.SetMinRowsVisible(10)
+
+    container := container.NewVBox(fastEntry)
+    fastEntry.OnChanged = func(text string) {
+        settings.FastCliboard = text
+    }
+
+    container.Show()
+    dialog.ShowCustomConfirm(
+        common.WIDGET_FASTCLIBOARD, 
+        "Confirm", "Cancel",
+        container, func(save bool) {
+            settings.FastCliboard = fastEntry.Text
+            utils.EnsureDir("data/")
+            utils.WriteTxtFile("data/fast_cliboard.txt", settings.FastCliboard)
         }, parent)
 }

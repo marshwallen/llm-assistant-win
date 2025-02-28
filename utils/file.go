@@ -39,3 +39,21 @@ func (w *CSVWriter) Close() {
 	w.Flush()
 	w.file.Close()
 }
+
+func ReadTxtFile(filename string) (string, error) {
+	data, err := os.ReadFile(filename)
+    if err != nil {
+        return "", err
+    }
+
+    content := string(data)
+    return content, nil
+}
+
+func WriteTxtFile(filename string, content string) error {
+	err := os.WriteFile(filename, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}

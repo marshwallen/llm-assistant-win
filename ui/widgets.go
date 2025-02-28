@@ -64,14 +64,23 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
     }
 
     // 聊天窗口布局
+    chatBottomSplit := container.NewVSplit(
+        widget.NewButton(common.WIDGET_SKIP_TO_BOTTOM, func() {
+            chatDisplay.SetText(chatChunk.RenderFinalText())
+            chatScroll.ScrollToBottom()
+        }),
+        widget.NewButton(common.WIDGET_SEND, func() {
+            if inputEntry.Text != "" {
+                inputEntry.OnSubmitted(inputEntry.Text)
+            }
+        }),
+    )
+    chatBottomSplit.SetOffset(0.2)
+
     chatSplit := container.NewVSplit(
         chatScroll,
         container.NewBorder(nil, nil, nil, 
-            widget.NewButton(common.WIDGET_SEND, func() {
-                if inputEntry.Text != "" {
-                    inputEntry.OnSubmitted(inputEntry.Text)
-                }
-            }),
+            chatBottomSplit,
             inputEntry,
         ),
     )

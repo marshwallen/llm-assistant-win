@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	fyne.io/fyne/v2 v2.5.4
+	github.com/StackExchange/wmi v1.2.1
 	github.com/shirou/gopsutil/v4 v4.25.1
 	golang.org/x/text v0.22.0
 	gopkg.in/yaml.v3 v3.0.1

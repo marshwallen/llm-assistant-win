@@ -39,8 +39,8 @@ func ProcessStream(ctx context.Context, settings *common.Settings, widgets commo
 				useTool, midOutput := workers.AgentParser(contentBuffer.String())
 				// 如果 useTool 为 True，则 midOutput 为使用工具搜索后的结果
 				if useTool{
-					// widgets.ChatChunk.Process(common.CHAT_AGENT_MID + midOutput)
-        			// widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
+					widgets.ChatChunk.Process(common.CHAT_AGENT_MID + midOutput)
+        			widgets.ChatDisplay.SetText(widgets.ChatChunk.RenderNextText())
 					UpdateHistory(history, common.LLMMessage{Role: "midresult", Content: midOutput})
 				// 否则，midOutput 为直接返回的 Assistant 的回答
 				}else{

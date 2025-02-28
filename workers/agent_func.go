@@ -10,6 +10,7 @@ var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 	"get_file_tree": getFileTree,
 	"get_sys_health": getSysHealth,
 	"get_sys_process": getSysProcess,
+	"get_sys_driver": getSysDriver,
 }
 
 // ** Register Agent Tools Prompt
@@ -18,6 +19,7 @@ var ToolsPromptRegister = []string{
 	GET_FILE_TREE_PROMPT,
 	GET_SYS_HEALTH_PROMPT,
 	GET_SYS_PROCESS_PROMPT,
+	GET_SYS_DRIVER_PROMPT,
 }
 
 // 在这里写 Agent Tools 的函数入口
@@ -109,8 +111,7 @@ const GET_SYS_PROCESS_PROMPT = `
 			"enable": true
 		}
 	}
-}
-`
+}`
 // 根据传入的参数判断是否启用获取系统进程信息
 func getSysProcess(q map[string]interface{}) string{
 	enable, _ := q["enable"].(bool)
@@ -118,6 +119,30 @@ func getSysProcess(q map[string]interface{}) string{
 		// 获取系统进程信息
 		_o := tools.GetSysProcessStr()
 		output := "<get_sys_process> 返回结果：" + _o
+		return output
+	}
+	return ""
+}
+
+const GET_SYS_DRIVER_PROMPT = `
+工具 <get_sys_driver> 使用规则：
+1. 如果用户提到了 <分析系统驱动状态> 等类似的需求，你可以使用 <get_sys_driver> 工具来获取系统进程信息。
+2. 你的目的是排查系统中的驱动问题，如驱动程序信息，包括设备名称、制造商、驱动版本、状态和签名状态等。
+3. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
+{
+	"tools": {
+		"get_sys_driver": {						  
+			"enable": true
+		}
+	}
+}`
+
+func getSysDriver(q map[string]interface{}) string{
+	enable, _ := q["enable"].(bool)
+	if enable {
+		// 获取系统进程信息
+		_o := tools.GetSysDriverStr()
+		output := "<get_sys_driver> 返回结果：" + _o
 		return output
 	}
 	return ""

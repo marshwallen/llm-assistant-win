@@ -108,9 +108,19 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
             }
             settings.Running = false
         }),
-        widget.NewButton(common.WIDGET_COPY_CHAT, func() {
-            clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
-            clipboard.SetContent(chatDisplay.Text)
+        widget.NewButton(common.WIDGET_FREE_COPY, func() {
+            spaceLabel := widget.NewLabel(strings.Repeat(" ",200))
+            copyEntry := widget.NewMultiLineEntry()
+            copyEntry.Wrapping = fyne.TextWrapWord
+            copyEntry.SetMinRowsVisible(20)
+            copyEntry.SetText(chatDisplay.Text)
+
+            dialog.ShowCustomConfirm(common.WIDGET_FREE_COPY, "Confirm", "Close", container.NewVBox(spaceLabel, copyEntry), func(b bool) {
+                if b {
+                    clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
+                    clipboard.SetContent(chatDisplay.Text)
+                }
+            },window)
         }),
         widget.NewButton(common.WIDGET_AGENT_SETTING, func() {
             showAgentSetting(window, settings)
@@ -302,12 +312,14 @@ func showBackendSettingDialog(parent fyne.Window, modelTitle *widget.Label, sett
 
 func showFastCliboard(parent fyne.Window, settings *common.Settings) {
     // 快捷指令板
+    spaceLabel := widget.NewLabel(strings.Repeat(" ",200))
+
     fastEntry := widget.NewMultiLineEntry()
     fastEntry.Wrapping = fyne.TextWrapWord
     fastEntry.SetText(settings.FastCliboard)
-    fastEntry.SetMinRowsVisible(10)
+    fastEntry.SetMinRowsVisible(20)
 
-    container := container.NewVBox(fastEntry)
+    container := container.NewVBox(spaceLabel, fastEntry)
     fastEntry.OnChanged = func(text string) {
         settings.FastCliboard = text
     }

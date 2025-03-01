@@ -11,4 +11,4 @@ backend:
         base_url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
         api_key: ""
         model: deepseek-r1-250120
-default_backend: ollama
+default_backend: qwen

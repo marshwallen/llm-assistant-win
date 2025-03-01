@@ -112,15 +112,20 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
             clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
             clipboard.SetContent(chatDisplay.Text)
         }),
+        widget.NewButton(common.WIDGET_AGENT_SETTING, func() {
+            showAgentSetting(window, settings)
+        }),
         widget.NewButton(common.WIDGET_AGENT_SWITCH, func() {
             if settings.EnableAgent{
                 settings.SysPrompt = workers.SYSTEM_PROMPT_DEFAULT
                 settings.EnableAgent = false
             }else{
                 var agentPrompt string
-                for k, v := range workers.ToolsPromptRegister {
-                    if v {
-                        agentPrompt += fmt.Sprintf("%s\n", k)
+                for _, content := range workers.ToolsPromptRegister {
+                    if v, ok := content.(map[string]interface{}); ok {
+                        if v["enable"].(bool) {
+                            agentPrompt += fmt.Sprintf("%s\n", v["prompt"])
+                        }
                     }
                 }
                 settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + agentPrompt
@@ -317,3 +322,39 @@ func showFastCliboard(parent fyne.Window, settings *common.Settings) {
             utils.WriteTxtFile("config/fast_cliboard.txt", settings.FastCliboard)
         }, parent)
 }
+
+func showAgentSetting(parent fyne.Window, settings *common.Settings) {
+    // 动态生成控件切片
+    var controls []fyne.CanvasObject
+    for name, c := range workers.ToolsPromptRegister {
+
+        content, _ := c.(map[string]interface{})
+        enable, _ := content["enable"].(bool)
+
+        statusLabel := widget.NewLabel(fmt.Sprint(enable))
+        nameLabel := widget.NewLabel(name)
+        controlButton := widget.NewCheck("Enable:", func(b bool) {
+            content["enable"] = b
+            statusLabel.SetText(fmt.Sprint(b))
+        })
+        controlButton.Checked = enable
+        
+        itemContainer := container.NewHBox(nameLabel, layout.NewSpacer(), controlButton, statusLabel)
+        controls = append(controls, itemContainer)
+    }
+    vbox := container.NewVBox(controls...)
+    dialog.ShowCustomConfirm(common.WIDGET_AGENT_SETTING, "Reload", "Confirm", vbox, func(save bool) {
+        if settings.EnableAgent{
+            var agentPrompt string
+            for _, content := range workers.ToolsPromptRegister {
+                if v, ok := content.(map[string]interface{}); ok {
+                    if v["enable"].(bool) {
+                        agentPrompt += fmt.Sprintf("%s\n", v["prompt"])
+                    }
+                }
+            }
+            settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + agentPrompt
+        }
+    },parent)
+}
+    

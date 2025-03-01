@@ -16,14 +16,14 @@ var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 }
 
 // ** 注册 Agent 工具 Prompt，后面的布尔值是设定其是否启用
-var ToolsPromptRegister = map[string]bool{
-	GET_WIN_EVENT_PROMPT: true,
-	GET_FILE_TREE_PROMPT: true,
-	GET_SYS_HEALTH_PROMPT: true,
-	GET_SYS_PROCESS_PROMPT: true,
-	GET_SYS_DRIVER_PROMPT: true,
-	GET_BILI_RCMD_PROMPT: true,
-	GET_ZHIHU_RCMD_PROMPT: true,
+var ToolsPromptRegister = map[string]interface{}{
+	"GET_WIN_EVENT": map[string]interface{}{"prompt": GET_WIN_EVENT_PROMPT, "enable": true},
+	"GET_FILE_TREE": map[string]interface{}{"prompt": GET_FILE_TREE_PROMPT, "enable": true},
+	"GET_SYS_HEALTH": map[string]interface{}{"prompt": GET_SYS_HEALTH_PROMPT, "enable": true},
+	"GET_SYS_PROCESS": map[string]interface{}{"prompt": GET_SYS_PROCESS_PROMPT, "enable": true},
+	"GET_SYS_DRIVER": map[string]interface{}{"prompt": GET_SYS_DRIVER_PROMPT, "enable": true},
+	"GET_BILI_RCMD": map[string]interface{}{"prompt": GET_BILI_RCMD_PROMPT, "enable": true},
+	"GET_ZHIHU_RCMD": map[string]interface{}{"prompt": GET_ZHIHU_RCMD_PROMPT, "enable": true},
 }
 
 // 在这里写 Agent Tools 的函数入口

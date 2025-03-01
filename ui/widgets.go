@@ -108,9 +108,22 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
             }
             settings.Running = false
         }),
-        widget.NewButton(common.WIDGET_COPY_CHAT, func() {
-            clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
-            clipboard.SetContent(chatDisplay.Text)
+        widget.NewButton(common.WIDGET_FREE_COPY, func() {
+            spaceLabel := widget.NewLabel(strings.Repeat(" ",200))
+            copyEntry := widget.NewMultiLineEntry()
+            copyEntry.Wrapping = fyne.TextWrapWord
+            copyEntry.SetMinRowsVisible(20)
+            copyEntry.SetText(chatDisplay.Text)
+
+            dialog.ShowCustomConfirm(common.WIDGET_FREE_COPY, "Confirm", "Close", container.NewVBox(spaceLabel, copyEntry), func(b bool) {
+                if b {
+                    clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
+                    clipboard.SetContent(chatDisplay.Text)
+                }
+            },window)
+        }),
+        widget.NewButton(common.WIDGET_AGENT_SETTING, func() {
+            showAgentSetting(window, settings)
         }),
         widget.NewButton(common.WIDGET_AGENT_SWITCH, func() {
             if settings.EnableAgent{
@@ -118,9 +131,11 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
                 settings.EnableAgent = false
             }else{
                 var agentPrompt string
-                for k, v := range workers.ToolsPromptRegister {
-                    if v {
-                        agentPrompt += fmt.Sprintf("%s\n", k)
+                for _, content := range workers.ToolsPromptRegister {
+                    if v, ok := content.(map[string]interface{}); ok {
+                        if v["enable"].(bool) {
+                            agentPrompt += fmt.Sprintf("%s\n", v["prompt"])
+                        }
                     }
                 }
                 settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + agentPrompt
@@ -275,7 +290,7 @@ func showBackendSettingDialog(parent fyne.Window, modelTitle *widget.Label, sett
         widget.NewFormItem(common.WIDGET_FORM_BACKEND, backendSelect),
     )
 
-    dialog.ShowCustomConfirm("", common.WIDGET_DIALOG_SAVE, common.WIDGET_DIALOG_CANCEL,
+    dialog.ShowCustomConfirm(common.WIDGET_BACKEND_SETTING, common.WIDGET_DIALOG_SAVE, common.WIDGET_DIALOG_CANCEL,
         container.NewVBox(form),
         func(save bool) {
             if save {
@@ -297,12 +312,14 @@ func showBackendSettingDialog(parent fyne.Window, modelTitle *widget.Label, sett
 
 func showFastCliboard(parent fyne.Window, settings *common.Settings) {
     // 快捷指令板
+    spaceLabel := widget.NewLabel(strings.Repeat(" ",200))
+
     fastEntry := widget.NewMultiLineEntry()
     fastEntry.Wrapping = fyne.TextWrapWord
     fastEntry.SetText(settings.FastCliboard)
-    fastEntry.SetMinRowsVisible(10)
+    fastEntry.SetMinRowsVisible(20)
 
-    container := container.NewVBox(fastEntry)
+    container := container.NewVBox(spaceLabel, fastEntry)
     fastEntry.OnChanged = func(text string) {
         settings.FastCliboard = text
     }
@@ -317,3 +334,39 @@ func showFastCliboard(parent fyne.Window, settings *common.Settings) {
             utils.WriteTxtFile("config/fast_cliboard.txt", settings.FastCliboard)
         }, parent)
 }
+
+func showAgentSetting(parent fyne.Window, settings *common.Settings) {
+    // 动态生成控件切片
+    var controls []fyne.CanvasObject
+    for name, c := range workers.ToolsPromptRegister {
+
+        content, _ := c.(map[string]interface{})
+        enable, _ := content["enable"].(bool)
+
+        statusLabel := widget.NewLabel(fmt.Sprint(enable))
+        nameLabel := widget.NewLabel(name)
+        controlButton := widget.NewCheck("Enable:", func(b bool) {
+            content["enable"] = b
+            statusLabel.SetText(fmt.Sprint(b))
+        })
+        controlButton.Checked = enable
+        
+        itemContainer := container.NewHBox(nameLabel, layout.NewSpacer(), controlButton, statusLabel)
+        controls = append(controls, itemContainer)
+    }
+    vbox := container.NewVBox(controls...)
+    dialog.ShowCustomConfirm(common.WIDGET_AGENT_SETTING, "Reload", "Confirm", vbox, func(save bool) {
+        if settings.EnableAgent{
+            var agentPrompt string
+            for _, content := range workers.ToolsPromptRegister {
+                if v, ok := content.(map[string]interface{}); ok {
+                    if v["enable"].(bool) {
+                        agentPrompt += fmt.Sprintf("%s\n", v["prompt"])
+                    }
+                }
+            }
+            settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + agentPrompt
+        }
+    },parent)
+}
+    

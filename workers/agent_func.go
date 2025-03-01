@@ -16,14 +16,14 @@ var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 }
 
 // ** 注册 Agent 工具 Prompt，后面的布尔值是设定其是否启用
-var ToolsPromptRegister = map[string]bool{
-	GET_WIN_EVENT_PROMPT: true,
-	GET_FILE_TREE_PROMPT: true,
-	GET_SYS_HEALTH_PROMPT: true,
-	GET_SYS_PROCESS_PROMPT: true,
-	GET_SYS_DRIVER_PROMPT: true,
-	GET_BILI_RCMD_PROMPT: true,
-	GET_ZHIHU_RCMD_PROMPT: true,
+var ToolsPromptRegister = map[string]interface{}{
+	"GET_WIN_EVENT": map[string]interface{}{"prompt": GET_WIN_EVENT_PROMPT, "enable": true},
+	"GET_FILE_TREE": map[string]interface{}{"prompt": GET_FILE_TREE_PROMPT, "enable": true},
+	"GET_SYS_HEALTH": map[string]interface{}{"prompt": GET_SYS_HEALTH_PROMPT, "enable": true},
+	"GET_SYS_PROCESS": map[string]interface{}{"prompt": GET_SYS_PROCESS_PROMPT, "enable": true},
+	"GET_SYS_DRIVER": map[string]interface{}{"prompt": GET_SYS_DRIVER_PROMPT, "enable": true},
+	"GET_BILI_RCMD": map[string]interface{}{"prompt": GET_BILI_RCMD_PROMPT, "enable": true},
+	"GET_ZHIHU_RCMD": map[string]interface{}{"prompt": GET_ZHIHU_RCMD_PROMPT, "enable": true},
 }
 
 // 在这里写 Agent Tools 的函数入口
@@ -158,7 +158,8 @@ const GET_BILI_RCMD_PROMPT = `
 2. 你的目的是根据用户的需求过滤得到的视频列表, 筛选出用户喜爱且高质量的视频给用户 (包含BV号、UP主、标题、视频长度、播放数、弹幕数、点赞数、推荐理由等重要信息)
 3. 如果用户希望推荐视频的来源为个人定制化推荐, 则指定"enable_cookie"为true, 否则默认为false。
 4. rounds是需要获取几轮推荐。如果用户没有特别指出, 就保持默认的1。
-5. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
+5. 必须给出每个视频的链接和BV号
+6. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
 {
 	"tools": {
 		"get_bili_rcmd": {						  
@@ -180,9 +181,10 @@ func getBiliRcmd(q map[string]interface{}) string{
 const GET_ZHIHU_RCMD_PROMPT = `
 工具 <get_zhihu_rcmd> 使用规则：
 1. 如果用户提到了 <文章推荐或知乎文章推荐> 等类似的需求, 你可以使用 <get_zhihu_rcmd> 工具来获取文章列表。
-2. 你的目的是根据用户的需求过滤得到的文章列表, 筛选出用户喜爱且高质量的文章给用户 (包含标题、作者、标题、链接、描述、赞同数、评论数、推荐理由等重要信息)
+2. 你的目的是根据用户的需求过滤得到的文章列表, 筛选出用户喜爱且高质量的文章给用户 (包含标题、作者、标题、描述、赞同数、评论数、推荐理由等重要信息)
 3. rounds是需要获取几轮推荐。如果用户没有特别指出, 就保持默认的3。
-4. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
+4. 必须给出每个文章的链接
+5. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
 {
 	"tools": {
 		"get_zhihu_rcmd": {						  

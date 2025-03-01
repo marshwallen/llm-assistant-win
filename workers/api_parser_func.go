@@ -18,10 +18,10 @@ var ParserFuncRegister = map[string]func([]byte) (string, bool){
 
 // ** Ollama 解析块 **
 type RespOllama struct {
-    Model     string    `json:"model"`
-    CreatedAt time.Time `json:"created_at,omitempty"` 			// 使用RFC3339Nano时间格式
-    Message   common.LLMMessage   `json:"message"`
-    Done      bool      `json:"done"`
+    Model     string    			`json:"model"`
+    CreatedAt time.Time 			`json:"created_at,omitempty"` 			// 使用RFC3339Nano时间格式
+    Message   common.LLMMessage   	`json:"message"`
+    Done      bool      			`json:"done"`
 }
 
 func ParserOllamaResp(resp []byte) (content string, done bool) {

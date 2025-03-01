@@ -48,6 +48,7 @@ func AgentParser(rawOutput string) (useTool bool, output string){
 	if !ok {
 		useTool = false
 		output = rawOutput
+		fmt.Print(err)
 		return
 	}
 

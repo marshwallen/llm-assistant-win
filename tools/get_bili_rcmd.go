@@ -7,6 +7,9 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"os"
+	"gopkg.in/yaml.v3"
+	"path/filepath"
 )
 
 // B站响应体定义
@@ -46,6 +49,11 @@ type VideoStat struct {
 type RcmdReasonInfo struct {
 	Content 		string 			`json:"content"`
 	ReasonType 		int 			`json:"reason_type"`
+}
+
+// 工具配置
+type BiliToolCfg struct {
+	Cookie 			string			`json:"cookie"`
 }
 
 func GetBiliRcmd(ctx context.Context, cookie string) (biliresp *BiliResponse, err error) {
@@ -98,14 +106,35 @@ func GetBiliRcmd(ctx context.Context, cookie string) (biliresp *BiliResponse, er
 	return &result, nil
 }
 
-func GetBiliRcmdStr(cookie string, rounds int) (r string) {
+func GetBiliRcmdStr(enable_cookie bool, rounds int) (r string) {
+	// 读取工具配置文件
+    data, err := os.ReadFile(filepath.Clean("config/agent_get_bili_rcmd.yaml"))
+    if err != nil {
+        fmt.Printf("error read yaml: %v", err)
+        return
+    }
+
+    // 解析 Yaml
+	var config BiliToolCfg
+    if err := yaml.Unmarshal(data, &config); err != nil {
+        fmt.Printf("error extract yaml: %v", err)
+        return
+    }
+
 	// 从结构体中提取关键字，并拼接成字符串
 	// rounds 表示获取几轮推荐
 	for i := 0; i < rounds; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
 		defer cancel()
 
-		biliresp, err := GetBiliRcmd(ctx, cookie)
+		var biliresp *BiliResponse
+		var err error
+		if enable_cookie {
+			biliresp, err = GetBiliRcmd(ctx, config.Cookie)
+		}else{
+			biliresp, err = GetBiliRcmd(ctx, "")
+		}
+		
 		if err != nil {
 			return
 		}
@@ -125,6 +154,7 @@ func GetBiliRcmdStr(cookie string, rounds int) (r string) {
 			r += fmt.Sprintf("[%s] %s | 发布时间: %s | UP主: %s(%d) | 视频时长(秒): %v | 观看数: %d | 点赞数: %d | 弹幕数: %d | 推荐理由: %s\n",
 				bvid, title, pubdate, owner, uid, duration, view, like, danmaku, rcmdReason)
 		}
+		time.Sleep(500 * time.Millisecond)
 	}
 	return
 }

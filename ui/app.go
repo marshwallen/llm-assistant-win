@@ -19,7 +19,7 @@ func StartAPP() {
     window := wApp.NewWindow(common.WIDGET_APP_NAME)
     window.Resize(fyne.NewSize(1024, 768))
 
-    cfg, _ := utils.LoadCfg()
+    cfg, _ := utils.LoadLLMCfg()
     fastCliboard, _ := utils.ReadTxtFile("config/fast_cliboard.txt")
 
     var modelList []string

@@ -117,7 +117,13 @@ func MainWidgets(window fyne.Window, history *list.List, settings *common.Settin
                 settings.SysPrompt = workers.SYSTEM_PROMPT_DEFAULT
                 settings.EnableAgent = false
             }else{
-                settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + strings.Join(workers.ToolsPromptRegister, "\n")
+                var agentPrompt string
+                for k, v := range workers.ToolsPromptRegister {
+                    if v {
+                        agentPrompt += fmt.Sprintf("%s\n", k)
+                    }
+                }
+                settings.SysPrompt = workers.SYSTEM_PROMPT_WITH_TOOLS_BASE + agentPrompt
                 settings.EnableAgent = true
             }
             updateSidebarInfo(modelTitle, settings)
@@ -219,7 +225,7 @@ func showSettingsDialog(parent fyne.Window, modelTitle *widget.Label, settings *
                 // 保存配置到文件中
                 cfg.Backend[settings.BackendName] = settings.BackendCfg
                 cfg.Default = settings.BackendName
-                utils.SaveCfg(cfg)
+                utils.SaveLLMCfg(cfg)
             }
         }, parent)
 }
@@ -282,7 +288,7 @@ func showBackendSettingDialog(parent fyne.Window, modelTitle *widget.Label, sett
 
                 // 保存配置文件
                 cfg.Default = choice
-                utils.SaveCfg(cfg)
+                utils.SaveLLMCfg(cfg)
                 // 刷新
                 updateSidebarInfo(modelTitle, settings)
             }

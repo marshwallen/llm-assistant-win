@@ -4,7 +4,7 @@ import (
 	"winds-assistant/tools"
 )
 
-// ** Register Agent Tools
+// ** 注册 Agent 工具函数
 var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 	"get_win_event": getWinEvent,
 	"get_file_tree": getFileTree,
@@ -12,16 +12,18 @@ var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
 	"get_sys_process": getSysProcess,
 	"get_sys_driver": getSysDriver,
 	"get_bili_rcmd": getBiliRcmd,
+	"get_zhihu_rcmd": getZhihuRcmd,
 }
 
-// ** Register Agent Tools Prompt
-var ToolsPromptRegister = []string{
-	GET_WIN_EVENT_PROMPT,
-	GET_FILE_TREE_PROMPT,
-	GET_SYS_HEALTH_PROMPT,
-	GET_SYS_PROCESS_PROMPT,
-	GET_SYS_DRIVER_PROMPT,
-	GET_BILI_RCMD_PROMPT,
+// ** 注册 Agent 工具 Prompt，后面的布尔值是设定其是否启用
+var ToolsPromptRegister = map[string]bool{
+	GET_WIN_EVENT_PROMPT: true,
+	GET_FILE_TREE_PROMPT: true,
+	GET_SYS_HEALTH_PROMPT: true,
+	GET_SYS_PROCESS_PROMPT: true,
+	GET_SYS_DRIVER_PROMPT: true,
+	GET_BILI_RCMD_PROMPT: true,
+	GET_ZHIHU_RCMD_PROMPT: true,
 }
 
 // 在这里写 Agent Tools 的函数入口
@@ -152,24 +154,47 @@ func getSysDriver(q map[string]interface{}) string{
 
 const GET_BILI_RCMD_PROMPT = `
 工具 <get_bili_rcmd> 使用规则：
-1. 如果用户提到了 <B站视频推荐> 等类似的需求, 你可以使用 <get_bili_rcmd> 工具来获取系统进程信息。
+1. 如果用户提到了 <B站视频推荐> 等类似的需求, 你可以使用 <get_bili_rcmd> 工具来获取视频列表。
 2. 你的目的是根据用户的需求过滤得到的视频列表, 筛选出用户喜爱且高质量的视频给用户 (包含BV号、UP主、标题、视频长度、播放数、弹幕数、点赞数、推荐理由等重要信息)
-3. 用户可能会给你一个cookie, 你可以通过在下面的json中加入该cookie, 从而获取用户喜欢的视频。如果没给, 就保持空字符串""。
+3. 如果用户希望推荐视频的来源为个人定制化推荐, 则指定"enable_cookie"为true, 否则默认为false。
 4. rounds是需要获取几轮推荐。如果用户没有特别指出, 就保持默认的1。
 5. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
 {
 	"tools": {
 		"get_bili_rcmd": {						  
-			"cookie": "xxx"
-			"rounds": 1,
+			"enable_cookie": false,
+			"rounds": 1
 		}
 	}
 }`
 
 func getBiliRcmd(q map[string]interface{}) string{
-	cookie, _ := q["cookie"].(string)
+	enable_cookie, _ := q["cookie"].(bool)
 	rounds, _ := q["rounds"].(float64)
-	_o := tools.GetBiliRcmdStr(cookie, int(rounds))
+
+	_o := tools.GetBiliRcmdStr(enable_cookie, int(rounds))
 	output := "<get_bili_rcmd> 返回结果：" + _o
+	return output
+}
+
+const GET_ZHIHU_RCMD_PROMPT = `
+工具 <get_zhihu_rcmd> 使用规则：
+1. 如果用户提到了 <文章推荐或知乎文章推荐> 等类似的需求, 你可以使用 <get_zhihu_rcmd> 工具来获取文章列表。
+2. 你的目的是根据用户的需求过滤得到的文章列表, 筛选出用户喜爱且高质量的文章给用户 (包含标题、作者、标题、链接、描述、赞同数、评论数、推荐理由等重要信息)
+3. rounds是需要获取几轮推荐。如果用户没有特别指出, 就保持默认的3。
+4. 最后, 只返回如下类似的json内容, 除此之外不要说任何其他内容, 不要有多余的符号如 Markdown 代码块标识符, 无效换行和空白等:
+{
+	"tools": {
+		"get_zhihu_rcmd": {						  
+			"rounds": 3
+		}
+	}
+}`
+
+func getZhihuRcmd(q map[string]interface{}) string{
+	rounds, _ := q["rounds"].(float64)
+
+	_o := tools.GetZhihuRcmdStr(int(rounds))
+	output := "<get_zhihu_rcmd> 返回结果：" + _o
 	return output
 }

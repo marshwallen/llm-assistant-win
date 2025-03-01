@@ -11,7 +11,7 @@ import (
 const CONFIG_FILE = "config/llm_settings.yaml"
 
 // 从指定路径加载配置文件并解析为 LLMConfig 结构体。
-func LoadCfg() (config *common.LLMConfig, err error) {
+func LoadLLMCfg() (config *common.LLMConfig, err error) {
     // 读取文件内容
     data, err := os.ReadFile(filepath.Clean(CONFIG_FILE))
     if err != nil {
@@ -28,7 +28,7 @@ func LoadCfg() (config *common.LLMConfig, err error) {
 }
 
 // 将给定的 LLMConfig 配置序列化为 YAML 格式并保存到指定的配置文件中
-func SaveCfg(config *common.LLMConfig) {
+func SaveLLMCfg(config *common.LLMConfig) {
     yamlData, err := yaml.Marshal(&config)
 	if err != nil {
 		fmt.Printf("error marshaling yaml: %v", err)

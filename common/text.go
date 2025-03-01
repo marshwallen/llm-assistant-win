@@ -36,7 +36,7 @@ const (
 	WIDGET_DIALOG_SAVE = "保存"
 	WIDGET_APP_NAME = "WinDS Assistant"
 	WIDGET_REFRESH = "刷新配置"
-	WIDGET_FASTCLIBOARD = "快捷指令板"
+	WIDGET_FASTCLIBOARD = "快捷指令"
 	WIDGET_SKIP_TO_BOTTOM = "跳转底部"
 )
 

@@ -5,7 +5,7 @@ import (
 )
 
 // ** 注册 Agent 工具函数
-var ToolsFuncRegister = map[string]func(map[string]interface{}) (string){
+var ToolsFuncRegister = map[string]func(map[string]interface{}, chan<- string) {
 	"get_win_event": getWinEvent,
 	"get_file_tree": getFileTree,
 	"get_sys_health": getSysHealth,
@@ -44,7 +44,7 @@ const GET_WIN_EVENT_PROMPT = `
 		}
 	}            
 }`
-func getWinEvent(q map[string]interface{}) string{
+func getWinEvent(q map[string]interface{}, ch chan<- string) {
 	logName, _ := q["logName"].(string)
     _s, _ := q["startTime"].(float64)
     _m, _ := q["maxEvents"].(float64)
@@ -53,7 +53,7 @@ func getWinEvent(q map[string]interface{}) string{
 
 	_o, _ := tools.QueryEvents(logName, startTime, maxEvents)
 	output := "<get_win_event> 返回结果：" + _o
-	return output
+	ch <- output
 }
 
 const GET_FILE_TREE_PROMPT = `
@@ -69,7 +69,7 @@ const GET_FILE_TREE_PROMPT = `
 	}
 }`
 // 根据提供的磁盘列表获取文件树结构
-func getFileTree(q map[string]interface{}) string{
+func getFileTree(q map[string]interface{}, ch chan<- string) {
 	diskList, _ := q["disk"].([]interface{})
 
 	output := "<get_file_tree> 返回结果："
@@ -78,7 +78,7 @@ func getFileTree(q map[string]interface{}) string{
 		_o, _ := tools.GetFileTree(disk, 3, 10, false)
 		output += _o
 	}
-	return output
+	ch <- output
 }
 
 const GET_SYS_HEALTH_PROMPT = `
@@ -96,12 +96,12 @@ const GET_SYS_HEALTH_PROMPT = `
 	}
 }`
 // 根据提供的参数获取系统健康数据
-func getSysHealth(q map[string]interface{}) string{
+func getSysHealth(q map[string]interface{}, ch chan<- string) {
 	_m, _ := q["minutes"].(float64)
 	minutes := int(_m)
 	_o, _ := tools.GetSysHealthData(minutes)
 	output := "<get_sys_health> 返回结果：" + _o
-	return output
+	ch <- output
 }
 
 const GET_SYS_PROCESS_PROMPT = `
@@ -117,15 +117,15 @@ const GET_SYS_PROCESS_PROMPT = `
 	}
 }`
 // 根据传入的参数判断是否启用获取系统进程信息
-func getSysProcess(q map[string]interface{}) string{
+func getSysProcess(q map[string]interface{}, ch chan<- string) {
 	enable, _ := q["enable"].(bool)
+	output := "<get_sys_process> 返回结果："
 	if enable {
 		// 获取系统进程信息
 		_o := tools.GetSysProcessStr()
-		output := "<get_sys_process> 返回结果：" + _o
-		return output
+		output +=  _o
 	}
-	return ""
+	ch <- output
 }
 
 const GET_SYS_DRIVER_PROMPT = `
@@ -141,15 +141,15 @@ const GET_SYS_DRIVER_PROMPT = `
 	}
 }`
 
-func getSysDriver(q map[string]interface{}) string{
+func getSysDriver(q map[string]interface{}, ch chan<- string) {
 	enable, _ := q["enable"].(bool)
+	output := "<get_sys_driver> 返回结果："
 	if enable {
 		// 获取系统进程信息
 		_o := tools.GetSysDriverStr()
-		output := "<get_sys_driver> 返回结果：" + _o
-		return output
+		output += _o
 	}
-	return ""
+	ch <- output
 }
 
 const GET_BILI_RCMD_PROMPT = `
@@ -169,13 +169,13 @@ const GET_BILI_RCMD_PROMPT = `
 	}
 }`
 
-func getBiliRcmd(q map[string]interface{}) string{
+func getBiliRcmd(q map[string]interface{}, ch chan<- string) {
 	enable_cookie, _ := q["cookie"].(bool)
 	rounds, _ := q["rounds"].(float64)
 
 	_o := tools.GetBiliRcmdStr(enable_cookie, int(rounds))
 	output := "<get_bili_rcmd> 返回结果：" + _o
-	return output
+	ch <- output
 }
 
 const GET_ZHIHU_RCMD_PROMPT = `
@@ -193,10 +193,9 @@ const GET_ZHIHU_RCMD_PROMPT = `
 	}
 }`
 
-func getZhihuRcmd(q map[string]interface{}) string{
+func getZhihuRcmd(q map[string]interface{}, ch chan<- string) {
 	rounds, _ := q["rounds"].(float64)
-
 	_o := tools.GetZhihuRcmdStr(int(rounds))
 	output := "<get_zhihu_rcmd> 返回结果：" + _o
-	return output
+	ch <- output
 }

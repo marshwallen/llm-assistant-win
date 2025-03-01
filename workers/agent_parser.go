@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 const (
@@ -52,18 +53,34 @@ func AgentParser(rawOutput string) (useTool bool, output string){
 		return
 	}
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex // 保护共享变量output
+
 	for k, v := range toolsMap {
 		if q, ok := v.(map[string]interface{}); ok {
 			f, exists := ToolsFuncRegister[k]
 			if !exists {
 				output += fmt.Sprintf("Invalid tool %s\n", k)
 				continue
-			}else{
-				output += f(q)
 			}
-		} else {
-			output += fmt.Sprintf("Invalid type for %s\n", k)
+
+			wg.Add(1)
+			go func(k string, qParam map[string]interface{}) {
+				defer wg.Done()
+
+				ch := make(chan string, 4096)
+				f(qParam, ch)     // 执行工具函数，结果写入ch
+				close(ch)         // 确保通道关闭
+				
+				// 读取通道结果（假设只发送一次结果）
+				result := <-ch
+				mu.Lock()
+				output += result
+				mu.Unlock()
+			}(k, q) // 显式传递循环变量k和q
 		}
 	}
+
+	wg.Wait() // 主协程直接等待所有任务完成
 	return
 }

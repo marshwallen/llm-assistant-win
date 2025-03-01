@@ -5,10 +5,10 @@ backend:
         model: ""
     qwen:
         base_url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
-        api_key: sk-8d7c3db530004c18bcde962e4a8d1b15
-        model: qwen-max
+        api_key: ""
+        model: qwen-plus
     volcengine:
         base_url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
-        api_key: 84a8a618-cf6f-403b-9cc9-1e6e6681079b
+        api_key: ""
         model: deepseek-r1-250120
-default_backend: qwen
+default_backend: ollama

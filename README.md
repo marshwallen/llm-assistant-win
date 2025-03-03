@@ -1,4 +1,4 @@
-## Winds-Assistant
+## 🍔 Winds-Assistant
 - Windows 上深度集成的 LLM 助手
 - 基于 100% Golang
 
@@ -11,7 +11,7 @@
 - 支持 HTTP/HTTPS 调用 Ollama、通义千问（大模型服务平台百炼）、火山引擎（火山方舟）
 - 方便的代码扩展；方便的模型切换
 
-### 2 多 Agent 并行
+### 2 多 AGENT 并行
 - 与 LLM 服务端无关的 Agent 功能，支持多个 Agent 并行
 - 内置系统 Agent：Windows 日志、硬件状态（如CPU利用率趋势）、驱动信息、驱动盘文件树信息检索
 - 第三方应用 Agent：Bilibili 个性化视频推荐、知乎文章推荐
@@ -24,6 +24,11 @@
 - 优化的文本显示组件：动态滑动窗口加载，支持超长文本不卡顿
 
 ---
+## 🍉 补充说明
+### AGENT 交互方式
+- 用户文字需求 -> LLM -> 解析需求，构造 Json -> 返回用户客户端，调用工具 -> LLM -> 任务完成
+- 若用户没有调用工具的需求，LLM 可以直接返回结果
+
 ### 初始配置（程序初次启动）
 - 在 `config/llm_settings.yaml` 中配置 LLM 服务端地址、模型、API Key 等信息
 - 在 `config/fast_cliboard.yaml` 中配置快捷指令板内容，保存超长 prompt
@@ -131,7 +136,7 @@ var ToolsPromptRegister = map[string]interface{}{
 }
 ```
 
-## 多 Agent Prompt 举例
+## 🥥 多 AGENT PROMPT 举例
 - 这里举例同时使用三种 Agent 工具的情况
 - 后端配置：火山引擎 - deepseek-r1-250120
 ```

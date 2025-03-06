@@ -1,4 +1,4 @@
-## 🍔 Winds-Assistant
+## 🍔 LLM-Assistant-Win
 - Windows 上深度集成的 LLM 助手
 - 基于 100% Golang
 
